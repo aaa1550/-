@@ -1,1 +1,20 @@
-{"name":"osoyoo-robot-car-pages","version":"1.0.0","private":true,"type":"module","scripts":{"build":"node build.mjs"},"dependencies":{"react":"19.2.6","react-dom":"19.2.6","lucide-react":"^1.31.0"},"devDependencies":{"esbuild":"^0.27.0","typescript":"5.9.3"}}
+{
+  "name": "osoyoo-robot-car-pages",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "test:import": "node tests/import.test.mjs"
+  },
+  "dependencies": {
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "lucide-react": "^1.31.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.27.0",
+    "typescript": "5.9.3",
+    "fake-indexeddb": "6.2.8"
+  }
+}
