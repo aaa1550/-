@@ -487,7 +487,15 @@
       "status": "確認待ち",
       "links": "FC-004, FR-014",
       "visibility": "public",
-      "updated": "2026-11-10T00:00:00+09:00"
+      "updated": "2026-11-11T09:23:11+09:00",
+      "overview": "安全制御・状態判定",
+      "processing": "1. 緊急停止→センサー異常→自動回避→リモコンの順に判定する。\n2. 前後同時検知では停止を維持。\n3. 時間制御は非ブロッキング方式を検討する。",
+      "functionForm": "updateSafetyState（関数形式は未確定）",
+      "input": "未確定（関数設計案）",
+      "output": "未確定（関数設計案）",
+      "sourceFile": "未確定（ソース未登録）",
+      "calledFunctions": "未確定（関数の実装は未登録）",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "TASK-001",
@@ -656,9 +664,17 @@
       "status": "実機確認待ち",
       "links": "CODE-003, CODE-002, FR-014, TC-014",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "UNOピン範囲確認",
+      "processing": "D0/D1をシリアル用に除外し、UNO相当の範囲を確認する。",
+      "functionForm": "bool hardware::validPin(int8_t pin);",
+      "input": "なし（引数のみ。外部I/O・共有設定の読み取りなし）",
+      "output": "なし（戻り値のみ。状態更新・外部I/O出力なし）",
+      "sourceFile": "HardwareAdapter.h",
+      "calledFunctions": "なし",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-003",
@@ -691,9 +707,17 @@
       "status": "実機確認待ち",
       "links": "CODE-004, CODE-002, FR-014, TC-014",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "PWM・タイマー利用条件確認",
+      "processing": "IRremoteのTimer2利用と競合する3/11を除外したPWM候補を確認する。",
+      "functionForm": "bool hardware::pwmPin(int8_t pin);",
+      "input": "なし（引数のみ。外部I/O・共有設定の読み取りなし）",
+      "output": "なし（戻り値のみ。状態更新・外部I/O出力なし）",
+      "sourceFile": "HardwareAdapter.h",
+      "calledFunctions": "なし",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-004",
@@ -726,9 +750,17 @@
       "status": "実機確認待ち",
       "links": "CODE-005, CODE-002, FR-014, TC-014",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "配線・仕様確認ゲート",
+      "processing": "ピン範囲、11ピンの重複、PWM、配線・停止境界・アクティブブザーの確認フラグを検証する。",
+      "functionForm": "bool hardware::pinsReady();",
+      "input": "BoardConfig.hのピン番号・PWM設定・配線確認・停止境界確認・ブザー確認フラグ。",
+      "output": "なし（戻り値のみ。状態更新・外部I/O出力なし）",
+      "sourceFile": "HardwareAdapter.h",
+      "calledFunctions": "pwmPin\nvalidPin",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-005",
@@ -761,9 +793,17 @@
       "status": "実機確認待ち",
       "links": "CODE-006, CODE-002, FR-008, TC-008",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "安全側からI/O初期化",
+      "processing": "pinsReady後、出力ラッチをLOWにしてOUTPUTへ変更し、PWM0、ブザーOFF、センサー入力を設定する。",
+      "functionForm": "bool hardware::initializeHardware();",
+      "input": "BoardConfig.hのピン番号・各確認フラグ。",
+      "output": "方向/PWM/TRIGをLOW、ブザーをOFFに初期化。センサー入力モードを設定し、左右PWMへ0を出力。",
+      "sourceFile": "HardwareAdapter.h",
+      "calledFunctions": "analogWrite\ndigitalWrite\npinMode\npinsReady",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-006",
@@ -796,9 +836,17 @@
       "status": "実機確認待ち",
       "links": "CODE-007, CODE-002, FR-001, FR-002, TC-001, TC-002",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "1輪分のHブリッジ出力",
+      "processing": "PWMを0にして方向ピンを設定し、飽和した速度絶対値をPWMへ出力する。",
+      "functionForm": "void hardware::writeWheel(int8_t in1,int8_t in2,int8_t pwm,int16_t speed,bool inverted);",
+      "input": "BoardConfig.hの配線/確認フラグ（pinsReadyで参照）。",
+      "output": "指定輪のPWMを0にし、方向端子と飽和後の速度PWMへ出力する。",
+      "sourceFile": "HardwareAdapter.h",
+      "calledFunctions": "analogWrite\ndigitalWrite\npinsReady\nrobot::clampPwm",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-007",
@@ -831,9 +879,17 @@
       "status": "実機確認待ち",
       "links": "CODE-008, CODE-002, FR-008, TC-008",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "左右モーター停止",
+      "processing": "pinsReadyを確認し、左右のwriteWheelへ0を渡す。",
+      "functionForm": "void hardware::stopMotors();",
+      "input": "BoardConfig.hの左右モーター端子と確認フラグ。",
+      "output": "左右PWMに0、左右方向端子にLOWを出力（惰性停止想定）。",
+      "sourceFile": "HardwareAdapter.h",
+      "calledFunctions": "pinsReady\nwriteWheel",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-008",
@@ -866,9 +922,17 @@
       "status": "実機確認待ち",
       "links": "CODE-009, CODE-002, FR-005, TC-005, FC-002",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "超音波トリガ・Echo取得",
+      "processing": "LOW2µs→HIGH10µs→LOWを出力し、pulseIn(HIGH,15000µs)で取得後にcmへ変換する。",
+      "functionForm": "float hardware::readUltrasonic();",
+      "input": "Echo端子のパルス幅、BoardConfig.hのTRIG/ECHO/タイムアウトと確認フラグ。",
+      "output": "TRIG端子へLOW→HIGH→LOWの測定パルスを出力する。",
+      "sourceFile": "HardwareAdapter.h",
+      "calledFunctions": "delayMicroseconds\ndigitalWrite\npinsReady\npulseIn\nrobot::pulseToCm",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-009",
@@ -901,9 +965,17 @@
       "status": "実機確認待ち",
       "links": "CODE-010, CODE-002, FR-005, FR-006, FR-013, TC-005, TC-006, TC-013",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "前後センサースナップショット",
+      "processing": "超音波値を取得して有効範囲を判定し、後方デジタル入力を極性変換する。",
+      "functionForm": "robot::SensorFrame hardware::sampleSensors(uint32_t now);",
+      "input": "前方Echo信号・後方赤外線端子のデジタルレベル、BoardConfig.hのピン/極性設定。",
+      "output": "前方測定用TRIGパルスを出力。SensorFrameは戻り値として返す。",
+      "sourceFile": "HardwareAdapter.h",
+      "calledFunctions": "digitalRead\npinsReady\nreadUltrasonic\nrobot::rearFromLevel\nrobot::validDistance",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-010",
@@ -936,9 +1008,17 @@
       "status": "実機確認待ち",
       "links": "CODE-011, CODE-002, FR-007, FR-014, TC-007, TC-014",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "車両出力をI/Oへ反映",
+      "processing": "動作を左右速度へ分解し、writeWheelを呼び出し、周期警告をブザーへ出す。",
+      "functionForm": "void hardware::applyOutput(const robot::Output& o,uint32_t now);",
+      "input": "BoardConfig.hのモーター/ブザー端子・極性・確認フラグ。",
+      "output": "左右モーターの方向/PWMと、ブザーON/OFFを出力する。",
+      "sourceFile": "HardwareAdapter.h",
+      "calledFunctions": "digitalWrite\npinsReady\nrobot::buzzerGate\nrobot::wheelsFor\nwriteWheel",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-011",
@@ -988,9 +1068,17 @@
       "status": "実機確認待ち",
       "links": "CODE-013, CODE-012, FR-001, FR-002, TC-001, TC-002",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "リモコン設定検証",
+      "processing": "5コマンドの重複を拒否し、REMOTE_CODES_CONFIRMEDを確認する。",
+      "functionForm": "bool remote::codesReady();",
+      "input": "BoardConfig.hの5キー値とREMOTE_CODES_CONFIRMED。",
+      "output": "なし（戻り値のみ。状態更新・外部I/O出力なし）",
+      "sourceFile": "RemoteAdapter.h",
+      "calledFunctions": "なし",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-013",
@@ -1023,9 +1111,17 @@
       "status": "実機確認待ち",
       "links": "CODE-014, CODE-012, FR-001, FR-002, FR-003, FR-004, TC-001, TC-004",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "IRコマンドを動作に変換",
+      "processing": "設定された5キーと照合し、Forward/Backward/Left/Right/Stopをoutへ設定する。",
+      "functionForm": "bool remote::decodeCommand(uint16_t code,robot::Motion& out);",
+      "input": "BoardConfig.hのリモコンキー値と確認フラグ。",
+      "output": "認識成功時のみ参照引数outへrobot::Motionを代入する。",
+      "sourceFile": "RemoteAdapter.h",
+      "calledFunctions": "codesReady",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-014",
@@ -1058,9 +1154,17 @@
       "status": "実機確認待ち",
       "links": "CODE-015, CODE-012, FR-001, FR-012, FR-014, TC-012, TC-014",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "IR受信・検証・再受信開始",
+      "processing": "1. decode後に受信結果をコピーしてresume。\n2. NEC/NEC2、address、overflow、対応キーを検証する。\n3. 正当なリピートのみ期限を延長する。",
+      "functionForm": "void remote::pollRemote(robot::RemoteState& state,uint32_t now,const robot::Parameters& p);",
+      "input": "IrReceiverの受信データ（protocol/address/command/flags）、BoardConfig.hのキー/アドレス設定。",
+      "output": "受信器をresumeし、正当な受信時にstateのcommand/receivedAt/sequence/validを更新する。",
+      "sourceFile": "RemoteAdapter.h",
+      "calledFunctions": "IrReceiver.decode\nIrReceiver.resume\ncodesReady\ndecodeCommand\nrobot::acceptRemote\nrobot::remoteFresh",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-015",
@@ -1127,9 +1231,17 @@
       "status": "実機確認待ち",
       "links": "CODE-018, CODE-017, FR-012, TC-012",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "経過時間判定",
+      "processing": "1. uint32_tの差を取り、指定周期以上かを比較する。\n2. 約49日でのmillis折り返しを差分で扱う。\n3. intervalは2^31未満で使う。",
+      "functionForm": "bool robot::elapsed(uint32_t now,uint32_t since,uint32_t interval);",
+      "input": "なし（引数のみ。外部I/O・共有設定の読み取りなし）",
+      "output": "なし（戻り値のみ。状態更新・外部I/O出力なし）",
+      "sourceFile": "RobotLogic.h",
+      "calledFunctions": "なし",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-018",
@@ -1162,9 +1274,17 @@
       "status": "実機確認待ち",
       "links": "CODE-019, CODE-017, FR-001, FR-002",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "PWM値の上限制限",
+      "processing": "負値は0、255超過は255、それ以外はuint8_tへ変換する。",
+      "functionForm": "uint8_t robot::clampPwm(int value);",
+      "input": "なし（引数のみ。外部I/O・共有設定の読み取りなし）",
+      "output": "なし（戻り値のみ。状態更新・外部I/O出力なし）",
+      "sourceFile": "RobotLogic.h",
+      "calledFunctions": "なし",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-019",
@@ -1197,9 +1317,17 @@
       "status": "実機確認待ち",
       "links": "CODE-020, CODE-017, FR-014, TC-014",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "制御設定の整合性確認",
+      "processing": "距離の有限性・正数・大小関係、速度の大小、主要なタイムアウトの整合を判定する。",
+      "functionForm": "bool robot::validParameters(const robot::Parameters& p);",
+      "input": "なし（引数のみ。外部I/O・共有設定の読み取りなし）",
+      "output": "なし（戻り値のみ。状態更新・外部I/O出力なし）",
+      "sourceFile": "RobotLogic.h",
+      "calledFunctions": "isfinite",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-020",
@@ -1232,9 +1360,17 @@
       "status": "実機確認待ち",
       "links": "CODE-021, CODE-017, FR-005, TC-005, FC-002",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "Echo幅を距離に換算",
+      "processing": "1. pulseUs × 0.0343 / 2で往復の伝播時間を距離へ換算する。\n2. 温度補正は行わない。",
+      "functionForm": "float robot::pulseToCm(uint32_t pulseUs);",
+      "input": "なし（引数のみ。外部I/O・共有設定の読み取りなし）",
+      "output": "なし（戻り値のみ。状態更新・外部I/O出力なし）",
+      "sourceFile": "RobotLogic.h",
+      "calledFunctions": "なし",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-021",
@@ -1267,9 +1403,17 @@
       "status": "実機確認待ち",
       "links": "CODE-022, CODE-017, FR-005, FR-013, TC-005, TC-013",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "距離の有効範囲判定",
+      "processing": "センサー用の仮の有効範囲を含む判定を行う。",
+      "functionForm": "bool robot::validDistance(float cm);",
+      "input": "なし（引数のみ。外部I/O・共有設定の読み取りなし）",
+      "output": "なし（戻り値のみ。状態更新・外部I/O出力なし）",
+      "sourceFile": "RobotLogic.h",
+      "calledFunctions": "isfinite",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-022",
@@ -1302,9 +1446,17 @@
       "status": "実機確認待ち",
       "links": "CODE-023, CODE-017, FR-008, TC-008, BUG-001, FC-002",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "緊急停止距離判定",
+      "processing": "emergencyInclusive=trueは<=、falseは<で比較する。",
+      "functionForm": "bool robot::frontEmergency(float cm,const robot::Parameters& p);",
+      "input": "なし（引数のみ。外部I/O・共有設定の読み取りなし）",
+      "output": "なし（戻り値のみ。状態更新・外部I/O出力なし）",
+      "sourceFile": "RobotLogic.h",
+      "calledFunctions": "isfinite",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-023",
@@ -1337,9 +1489,17 @@
       "status": "実機確認待ち",
       "links": "CODE-024, CODE-017, FR-005, FR-009, TC-009",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "前方警戒距離判定",
+      "processing": "1. 前方15cm以下を警戒とする。\n2. NANは別の異常判定で停止する。",
+      "functionForm": "bool robot::frontWarning(float cm,const robot::Parameters& p);",
+      "input": "なし（引数のみ。外部I/O・共有設定の読み取りなし）",
+      "output": "なし（戻り値のみ。状態更新・外部I/O出力なし）",
+      "sourceFile": "RobotLogic.h",
+      "calledFunctions": "isfinite",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-024",
@@ -1372,9 +1532,17 @@
       "status": "実機確認待ち",
       "links": "CODE-025, CODE-017, FR-006, TC-006, FC-003",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "後方赤外線の極性変換",
+      "processing": "アクティブLOW/HIGHを設定に従って論理的な検知有無へ変換する。",
+      "functionForm": "bool robot::rearFromLevel(bool levelHigh,bool activeLow);",
+      "input": "なし（引数のみ。外部I/O・共有設定の読み取りなし）",
+      "output": "なし（戻り値のみ。状態更新・外部I/O出力なし）",
+      "sourceFile": "RobotLogic.h",
+      "calledFunctions": "なし",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-025",
@@ -1407,9 +1575,17 @@
       "status": "実機確認待ち",
       "links": "CODE-026, CODE-017, FR-013, TC-013",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "センサー正常性・鮮度判定",
+      "processing": "前方valid・距離範囲・後方validを確認し、sampledAtからの経過がsensorMaxAgeMs未満か確認する。",
+      "functionForm": "bool robot::sensorsFresh(const robot::SensorFrame& s,uint32_t now,const robot::Parameters& p);",
+      "input": "なし（引数のみ。外部I/O・共有設定の読み取りなし）",
+      "output": "なし（戻り値のみ。状態更新・外部I/O出力なし）",
+      "sourceFile": "RobotLogic.h",
+      "calledFunctions": "elapsed\nvalidDistance",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-026",
@@ -1442,9 +1618,17 @@
       "status": "実機確認待ち",
       "links": "CODE-027, CODE-017, FR-001, FR-014, TC-014",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "リモコン通信期限判定",
+      "processing": "直近の受信からremoteTimeoutMs未満であることを確認する。",
+      "functionForm": "bool robot::remoteFresh(const robot::RemoteState& r,uint32_t now,const robot::Parameters& p);",
+      "input": "なし（引数のみ。外部I/O・共有設定の読み取りなし）",
+      "output": "なし（戻り値のみ。状態更新・外部I/O出力なし）",
+      "sourceFile": "RobotLogic.h",
+      "calledFunctions": "elapsed",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-027",
@@ -1477,9 +1661,17 @@
       "status": "実機確認待ち",
       "links": "CODE-028, CODE-017, FR-011, FR-014, TC-011, TC-014",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "移動方向の安全判定",
+      "processing": "1. 前進は前方警戒なし、後退は後方検知なし、旋回は前後とも安全な場合に許可する。\n2. 停止は常に許可。",
+      "functionForm": "bool robot::motionAllowed(robot::Motion m,const robot::SensorFrame& s,const robot::Parameters& p);",
+      "input": "なし（引数のみ。外部I/O・共有設定の読み取りなし）",
+      "output": "なし（戻り値のみ。状態更新・外部I/O出力なし）",
+      "sourceFile": "RobotLogic.h",
+      "calledFunctions": "frontWarning\nvalidDistance",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-028",
@@ -1512,9 +1704,17 @@
       "status": "実機確認待ち",
       "links": "CODE-029, CODE-017, FR-001, FR-002, FR-003, FR-004, TC-001, TC-004",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "車両動作を左右速度へ変換",
+      "processing": "前進(+,+)、後退(-,-)、左(-,+)、右(+,-)、停止(0,0)へ変換する。",
+      "functionForm": "robot::WheelPair robot::wheelsFor(robot::Motion m,uint8_t pwm);",
+      "input": "なし（引数のみ。外部I/O・共有設定の読み取りなし）",
+      "output": "なし（戻り値のみ。状態更新・外部I/O出力なし）",
+      "sourceFile": "RobotLogic.h",
+      "calledFunctions": "なし",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-029",
@@ -1547,9 +1747,17 @@
       "status": "実機確認待ち",
       "links": "CODE-030, CODE-017, FR-005, TC-005",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "計測表示用3点中央値",
+      "processing": "1. 3値を比較して中央値を返す。\n2. 診断・表示用で、緊急停止の生値判定には使用しない。",
+      "functionForm": "float robot::median3(float a,float b,float c);",
+      "input": "なし（引数のみ。外部I/O・共有設定の読み取りなし）",
+      "output": "なし（戻り値のみ。状態更新・外部I/O出力なし）",
+      "sourceFile": "RobotLogic.h",
+      "calledFunctions": "isfinite",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-030",
@@ -1582,9 +1790,17 @@
       "status": "実機確認待ち",
       "links": "CODE-031, CODE-017, FR-006, TC-006, FC-003",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "原本の変数Mへ変換",
+      "processing": "原本FC-003のM=2/M=3をそのまま表現する。",
+      "functionForm": "uint8_t robot::legacyRearState(bool blocked);",
+      "input": "なし（引数のみ。外部I/O・共有設定の読み取りなし）",
+      "output": "なし（戻り値のみ。状態更新・外部I/O出力なし）",
+      "sourceFile": "RobotLogic.h",
+      "calledFunctions": "なし",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-031",
@@ -1617,9 +1833,17 @@
       "status": "実機確認待ち",
       "links": "CODE-032, CODE-017, FR-008, TC-008",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "停止出力の生成",
+      "processing": "全モーションをStopにし、理由と警告のみを保持する。",
+      "functionForm": "robot::Output robot::makeStop(robot::Reason reason,bool warning=false);",
+      "input": "なし（引数のみ。外部I/O・共有設定の読み取りなし）",
+      "output": "なし（戻り値のみ。状態更新・外部I/O出力なし）",
+      "sourceFile": "RobotLogic.h",
+      "calledFunctions": "なし",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-032",
@@ -1652,9 +1876,17 @@
       "status": "実機確認待ち",
       "links": "CODE-033, CODE-017, FR-012, TC-012",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "制御コンテキスト初期化",
+      "processing": "Controllerの全状態を既定値へ戻し、phaseStartedをnowへ設定する。",
+      "functionForm": "void robot::resetController(robot::Controller& c,uint32_t now);",
+      "input": "なし（引数のみ。外部I/O・共有設定の読み取りなし）",
+      "output": "参照引数cの全メンバーを初期化し、phaseStartedをnowへ更新する。",
+      "sourceFile": "RobotLogic.h",
+      "calledFunctions": "なし",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-033",
@@ -1687,9 +1919,17 @@
       "status": "実機確認待ち",
       "links": "CODE-034, CODE-017, FR-009, FR-010, FC-004",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "状態遷移の記録",
+      "processing": "状態・開始時刻・抑止対象シーケンスを設定し、安全確認タイマーを解除する。",
+      "functionForm": "void robot::enterPhase(robot::Controller& c,robot::Phase p,uint32_t now,uint32_t sequence);",
+      "input": "なし（引数のみ。外部I/O・共有設定の読み取りなし）",
+      "output": "参照引数cのphase/phaseStarted/clearTiming/blockedSequenceを更新する。",
+      "sourceFile": "RobotLogic.h",
+      "calledFunctions": "なし",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-034",
@@ -1722,9 +1962,17 @@
       "status": "実機確認待ち",
       "links": "CODE-035, CODE-017, FR-012, TC-012",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "安全状態の連続継続確認",
+      "processing": "1. 安全初回に開始時刻を保持し、途中で不安全なら解除する。\n2. 所定時間を満たすまでfalse。",
+      "functionForm": "bool robot::clearStable(robot::Controller& c,bool clear,uint32_t now,uint32_t holdMs);",
+      "input": "なし（引数のみ。外部I/O・共有設定の読み取りなし）",
+      "output": "参照引数cのclearTiming/clearStartedを更新する。",
+      "sourceFile": "RobotLogic.h",
+      "calledFunctions": "elapsed",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-035",
@@ -1757,9 +2005,17 @@
       "status": "実機確認待ち",
       "links": "CODE-036, CODE-017, FR-008, FR-013, TC-008, TC-013",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "解除条件つき停止の保持",
+      "processing": "LatchedStopへ遷移し、発生理由を保存して停止出力を返す。",
+      "functionForm": "robot::Output robot::latchStop(robot::Controller& c,robot::Reason reason,uint32_t now,uint32_t seq);",
+      "input": "なし（引数のみ。外部I/O・共有設定の読み取りなし）",
+      "output": "参照引数cをLatchedStopへ遷移し、latchedReasonを更新する。停止指令は戻り値。",
+      "sourceFile": "RobotLogic.h",
+      "calledFunctions": "enterPhase\nmakeStop",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-036",
@@ -1792,9 +2048,17 @@
       "status": "実機確認待ち",
       "links": "CODE-037, CODE-017, FR-001, FR-012, TC-012",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "受信コマンド・世代の更新",
+      "processing": "1. 新規フレームのみコマンドとsequenceを更新。\n2. リピートは受信時刻のみ延長する。",
+      "functionForm": "void robot::acceptRemote(robot::RemoteState& r,robot::Motion command,uint32_t now,bool repeat);",
+      "input": "なし（引数のみ。外部I/O・共有設定の読み取りなし）",
+      "output": "参照引数rのcommand/sequence（新規受信のみ）とreceivedAt/validを更新する。",
+      "sourceFile": "RobotLogic.h",
+      "calledFunctions": "なし",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-037",
@@ -1827,9 +2091,17 @@
       "status": "実機確認待ち",
       "links": "CODE-038, CODE-017, FR-007, TC-007",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "ブザーの周期ON/OFF判定",
+      "processing": "1. 警告中に周期前半をON、後半をOFFとする。\n2. delayを使用しない。",
+      "functionForm": "bool robot::buzzerGate(bool warning,uint32_t now,uint32_t periodMs=400);",
+      "input": "なし（引数のみ。外部I/O・共有設定の読み取りなし）",
+      "output": "なし（戻り値のみ。状態更新・外部I/O出力なし）",
+      "sourceFile": "RobotLogic.h",
+      "calledFunctions": "なし",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-038",
@@ -1862,9 +2134,17 @@
       "status": "実機確認待ち",
       "links": "CODE-039, CODE-017, FR-008, FR-009, FR-010, FR-011, FR-012, FR-013, FR-014, TC-008, TC-009, TC-010, TC-011, TC-012, TC-013, TC-014, TC-015, FC-004",
       "visibility": "public",
-      "updated": "2026-11-10T01:44:52+09:00",
+      "updated": "2026-11-11T09:23:11+09:00",
       "generator": "robot-library-v1",
-      "owner": "設計例"
+      "owner": "設計例",
+      "overview": "方式C・安全優先制御の統合",
+      "processing": "1. 設定/センサー異常、緊急距離、前後同時検知を停止。\n2. 通信断とSTOPを回避より優先。\n3. 警戒時は一旦停止→逆方向安全確認→低速退避。\n4. 安全継続後は停止し、新規操作まで待機する。\n5. 時間超過は保持停止。",
+      "functionForm": "robot::Output robot::updateController(robot::Controller& c,const robot::SensorFrame& s,const robot::RemoteState& r,const robot::Parameters& p,uint32_t now);",
+      "input": "なし（引数のみ。外部I/O・共有設定の読み取りなし）",
+      "output": "参照引数cの状態/タイマー/停止理由を更新する。動作指令Outputは戻り値であり、この関数自体はI/Oを駆動しない。",
+      "sourceFile": "RobotLogic.h",
+      "calledFunctions": "clearStable\nelapsed\nenterPhase\nfrontEmergency\nfrontWarning\nlatchStop\nmakeStop\nmotionAllowed\nremoteFresh\nsensorsFresh\nvalidParameters",
+      "designLayout": "function-sheet-v1"
     },
     {
       "id": "CODE-039",
@@ -2336,11 +2616,11 @@
       "name": "FunctionDesign.md",
       "title": "関数設計書（全関数）",
       "url": "design/FunctionDesign.md",
-      "size": 25203,
+      "size": 54570,
       "category": "03_詳細設計",
       "description": "関数設計書（全関数）",
       "created": "2026-11-10T01:44:52+09:00",
-      "change": "初版",
+      "change": "画像に合わせた表形式へ変更",
       "visibility": "public",
       "generator": "robot-library-v1",
       "links": "BD-LIBRARY"
@@ -2366,14 +2646,29 @@
       "name": "RobotCarLibrary.zip",
       "title": "統合コード・診断スケッチ・関数設計書一式",
       "url": "code/RobotCarLibrary.zip",
-      "size": 25740,
+      "size": 33100,
       "category": "05_ソースコード",
       "description": "全コードと関数設計書を一括取得。未設定の既定値では駆動無効。",
       "created": "2026-11-10T01:44:52+09:00",
-      "change": "初版",
+      "change": "関数設計書を表形式へ更新（コード内容は変更なし）",
       "visibility": "public",
       "generator": "robot-library-v1",
       "links": "BD-LIBRARY, FILE-DESIGN"
+    },
+    {
+      "id": "FILE-DESIGN-HTML",
+      "group_id": "FILE-DESIGN-HTML",
+      "name": "FunctionDesign.html",
+      "title": "関数設計書（表形式・印刷用HTML）",
+      "url": "design/FunctionDesign.html",
+      "size": 57260,
+      "category": "03_詳細設計",
+      "description": "機能概要・処理内容・関数形式・入出力・ソースファイル・呼び出し関数。ブラウザの印刷からPDF保存可能。",
+      "created": "2026-11-11T09:23:11+09:00",
+      "change": "表形式版",
+      "visibility": "public",
+      "generator": "robot-library-v1",
+      "links": "FILE-DESIGN"
     }
   ]
 }

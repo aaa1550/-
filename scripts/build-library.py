@@ -121,3 +121,8 @@ with zipfile.ZipFile(zpath,'w',zipfile.ZIP_DEFLATED) as z:
 data['files'].append({'id':'FILE-SOURCE','group_id':'FILE-SOURCE','name':zpath.name,'title':'統合コード・診断スケッチ・関数設計書一式','url':'code/RobotCarLibrary.zip','size':zpath.stat().st_size,'category':'05_ソースコード','description':'全コードと関数設計書を一括取得。未設定の既定値では駆動無効。','created':stamp,'change':'初版','visibility':'public','generator':'robot-library-v1','links':'BD-LIBRARY, FILE-DESIGN'})
 datafile.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n')
 print(json.dumps({'codes':sum(r['kind']=='codes' for r in data['records']),'function_designs':functions,'diagnostic_sketches':9,'files':len(data['files'])}))
+
+
+# Keep the exported designs aligned with the approved function sheet layout.
+import runpy
+runpy.run_path(str(root / "scripts/format-function-designs.py"), run_name="__main__")
