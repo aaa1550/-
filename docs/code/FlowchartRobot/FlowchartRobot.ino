@@ -2,7 +2,7 @@
  * code.txtを参考に、提供フローチャートの関数順・速度を実装。
  * 必須の配線変更: 右ENA D9→D5、サーボ信号 D5→D9。
  * ServoがTimer1を使うため、D9/D10でモーターPWMは使わない。
- * 同じフォルダのFlowchartLogic.hが必要。実機走行は未検証。
+ * 同じフォルダのFlowchartLogic.hとBoardPins.hが必要。実機走行は未検証。
  */
 #include <Arduino.h>
 #define IR_USE_AVR_TIMER2
@@ -10,19 +10,7 @@
 #include <Servo.h>
 #include "FlowchartLogic.h"
 
-constexpr uint8_t IR_RECEIVE_PIN=4;
-constexpr uint8_t speedPinR=5;       // 元code.txtの9から変更（ENAの線を移す）
-constexpr uint8_t RightDirectPin1=12;
-constexpr uint8_t RightDirectPin2=11;
-constexpr uint8_t speedPinL=6;
-constexpr uint8_t LeftDirectPin1=7;
-constexpr uint8_t LeftDirectPin2=8;
-constexpr uint8_t BUZZ_PIN=13;       // LOWで鳴動するアクティブブザー
-constexpr uint8_t LFSensor_bl=0;     // code.txtを継承。D0のためSerialは使わない
-constexpr uint8_t LFSensor_br=2;
-constexpr uint8_t Echo_PIN=3;        // 配線.jpgのD2と異なる。code.txtのD3に合わせる
-constexpr uint8_t Trig_PIN=10;
-constexpr uint8_t SERVO_PIN=9;       // 元code.txtの5から変更（サーボの信号線を移す）
+#include "BoardPins.h"
 constexpr uint16_t IR_ADVANCE=24,IR_BACK=82,IR_RIGHT=90,IR_LEFT=8,IR_STOP=28;
 constexpr unsigned long REMOTE_TIMEOUT_MS=350;
 constexpr unsigned long SENSOR_PERIOD_MS=60;

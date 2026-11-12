@@ -1,10 +1,10 @@
 # フローチャート準拠版 / FlowchartRobot
 
-公開された `code.txt`（7134バイト）と、元のフローチャート4枚を確認して作成したArduino UNO用スケッチです。元の資料は上書きしていません。
+公開された `code.txt`（7134バイト）、元のフローチャート4枚、追加画像7枚を確認して作成したArduino UNO用スケッチです。元の資料は上書きしていません。
 
 ## 開き方
 
-ZIPを展開し、`FlowchartRobot/FlowchartRobot.ino`をArduino IDEで開きます。同じフォルダの`FlowchartLogic.h`も必要です。ボードはArduino Uno。ライブラリはArduino-IRremote 4.4.1、Servo 1.2.2を基準にしています。
+ZIPを展開し、`FlowchartRobot/FlowchartRobot.ino`をArduino IDEで開きます。同じフォルダの`FlowchartLogic.h`と`BoardPins.h`も必要です。ボードはArduino Uno。ライブラリはArduino-IRremote 4.4.1、Servo 1.2.2を基準にしています。
 
 ## 配線で必ず確認するところ
 
@@ -75,3 +75,9 @@ ZIP展開先でのロジックテスト（g++があるPC）:
 g++ -std=c++11 -Wall -Wextra -Werror -IFlowchartRobot tests/logic_test.cpp -o logic-test
 ./logic-test
 ```
+
+## 他の取り込み資料の利用
+
+同梱の`SourceReview.md`または`SourceReview.html`に、7枚すべての画像をコードへどう反映したか記載しました。画像に合わせEcho=D2を使用する設定も`BoardPins.h`で選択できます（右後方信号をD2からA5へ移す必要あり）。既定の配線は前版と同じです。
+
+`examples/TrackerMonitor/TrackerMonitor.ino`は、5.jpgの追跡センサーをA0〜A4で読む独立診断です。後方障害物センサーとしての利用可否は、資料だけでは未確認です。D0のセンサー線を外し、モーター電源を切って実行してください。
