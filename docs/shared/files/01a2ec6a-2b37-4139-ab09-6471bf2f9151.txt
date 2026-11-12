@@ -1,0 +1,216 @@
+#include "IRremote.hpp" 
+#include <Servo.h>
+
+// リモコン受信機の信号ピン(D4)
+#define IR_RECEIVE_PIN    4      // リモコンセンサーの信号ピン
+// モーター制御ピン
+#define speedPinR        9       // 右モーターPWM (MODEL-X ENA)
+#define RightDirectPin1  12      // 右モーター方向1 (MODEL-X IN1) 
+#define RightDirectPin2  11      // 右モーター方向2 (MODEL-X IN2)
+#define speedPinL        6       // 左モーターPWM (MODEL-X ENB)
+#define LeftDirectPin1   7       // 左モーター方向1 (MODEL-X IN3) 
+#define LeftDirectPin2   8       // 左モーター方向2 (MODEL-X IN4) 
+// リモコンボタンコード
+#define IR_ADVANCE       24      // リモコンの「▲」ボタン
+#define IR_BACK          82      // リモコンの「▼」ボタン
+#define IR_RIGHT         90      // リモコンの「>」ボタン
+#define IR_LEFT          8      // リモコンの「<」ボタン
+#define IR_STOP          28      // リモコンの「OK」ボタン
+#define IR_turnsmallleft 13      // リモコンの「#」ボタン
+// その他各種ピンの定義
+#define BUZZ_PIN         13      // ブザー用ピン（LOWで鳴動、HIGHで停止）
+#define LFSensor_bl      0       // 左後方赤外線センサー
+#define LFSensor_br      2       // 右後方赤外線センサー
+#define Echo_PIN         3       // 超音波 Echo
+#define Trig_PIN         10      // 超音波 Trig
+#define SERVO_PIN        5       // サーボモーター用ピン
+
+Servo headServo;                 // サーボオブジェクトの生成
+#define distancelimit  10;    // 障害物を検知する距離のしきい値 (cm)
+int front = 0;
+int back = 0;
+int IS_IR = 0;
+
+// ロボットの動作状態を表す列挙型
+enum DN  
+{ 
+  GO_ADVANCE, // 前進
+  GO_LEFT,    // 左折
+  GO_RIGHT,   // 右折
+  GO_BACK,    // 後退
+  STOP_STOP, 
+  DEF
+} Drive_Num = STOP_STOP;      // 現在の動作状態 (初期値は停止)
+
+// モーター制御関数
+void go_Advance()  // 前進
+{
+  digitalWrite(RightDirectPin1, HIGH);
+  digitalWrite(RightDirectPin2, LOW);
+  digitalWrite(LeftDirectPin1, HIGH);
+  digitalWrite(LeftDirectPin2, LOW);
+  analogWrite(speedPinL, 255);
+  analogWrite(speedPinR, 255);
+  if(IS_IR){delay(100);}else{delay(20);}
+}
+void go_Left()  // 左折
+{
+  digitalWrite(RightDirectPin1, HIGH);
+  digitalWrite(RightDirectPin2, LOW);
+  digitalWrite(LeftDirectPin1, LOW);
+  digitalWrite(LeftDirectPin2, HIGH);
+  analogWrite(speedPinL, 255);
+  analogWrite(speedPinR, 255);
+  if(IS_IR){delay(100);}else{delay(20);}
+}
+void go_Right()  // 右折
+{
+  digitalWrite(RightDirectPin1, LOW);
+  digitalWrite(RightDirectPin2, HIGH);
+  digitalWrite(LeftDirectPin1, HIGH);
+  digitalWrite(LeftDirectPin2, LOW);
+  analogWrite(speedPinL, 255);
+  analogWrite(speedPinR, 255);
+  if(IS_IR){delay(100);}else{delay(20);}
+}
+void go_Back()  // 後退
+{
+  digitalWrite(RightDirectPin1, LOW);
+  digitalWrite(RightDirectPin2, HIGH);
+  digitalWrite(LeftDirectPin1, LOW);
+  digitalWrite(LeftDirectPin2, HIGH);
+  analogWrite(speedPinL, 255);
+  analogWrite(speedPinR, 255);
+  if(IS_IR){delay(100);}else{delay(20);}
+}
+void stop_Stop()    // 停止
+{
+  digitalWrite(RightDirectPin1, LOW);
+  digitalWrite(RightDirectPin2, LOW);
+  digitalWrite(LeftDirectPin1, LOW);
+  digitalWrite(LeftDirectPin2, LOW);
+  analogWrite(speedPinL, 0);
+  analogWrite(speedPinR, 0);
+  if(IS_IR){delay(100);}else{delay(20);}
+}
+
+// 超音波センサーの距離計測
+int watch() {
+  long echo_distance;
+  digitalWrite(Trig_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(Trig_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(Trig_PIN, LOW);
+  echo_distance = pulseIn(Echo_PIN, HIGH, 30000);
+  if (echo_distance == 0) return 999;
+  return round(echo_distance * 0.01657);        
+}
+
+// 警告音を鳴らす関数
+void warning() {
+  for (int i = 0; i < 2; i++) {
+    digitalWrite(BUZZ_PIN, LOW);  // ブザー鳴動（ON）
+    delay(50);
+    digitalWrite(BUZZ_PIN, HIGH); // ブザー停止（OFF）
+    delay(50);
+  }
+}
+
+//センサーと障害物のチェック
+void checkSensorsAndObstacles() {
+  front = 0;
+  back = 0;
+  
+  //後方赤外線センサーのチェック
+  bool blVal = digitalRead(LFSensor_bl);
+  bool brVal = digitalRead(LFSensor_br);
+  if (blVal == LOW || brVal == LOW) { back = 1; } 
+
+  //超音波センサーのチェック
+  headServo.write(90);
+  int distance = watch();
+  if (distance <= distancelimit) { front = 1; } 
+
+  //障害物検知時は、ユーザーの操作よりも障害物検知時の動作を優先して上書き
+  if (front && Drive_Num == GO_ADVANCE) {
+    // 前方に障害物があるのに「前進」しようとした場合、強制的に後退に切り替える
+    Drive_Num = GO_BACK;
+    warning();
+  }
+  else if (back && Drive_Num == GO_BACK) {
+    // 後方に障害物があるのに「後退」しようとした場合、強制的に前進に切り替える
+    Drive_Num = GO_ADVANCE;
+    warning();
+  }
+  else if (back && front) {
+    Drive_Num = GO_RIGHT;
+    warning();
+  }
+  else if (back) {
+    Drive_Num = GO_ADVANCE;
+    warning();
+  }
+  else if (front) {
+    Drive_Num = GO_BACK;
+    warning();
+  }
+}
+// 赤外線信号の読み取り
+void do_IR_Tick()
+{
+  if(IrReceiver.decode())
+  {
+    uint16_t command = IrReceiver.decodedIRData.command;
+    // 押されたボタンに応じて状態を変更
+    if(command == IR_ADVANCE) { Drive_Num = GO_ADVANCE; IS_IR=1; }
+    else if(command == IR_RIGHT) { Drive_Num = GO_RIGHT; IS_IR=1; }
+    else if(command == IR_LEFT) { Drive_Num = GO_LEFT; IS_IR=1; }
+    else if(command == IR_BACK) { Drive_Num = GO_BACK; IS_IR=1; }
+    else if(command == IR_STOP) { Drive_Num = STOP_STOP; IS_IR=1; }
+    else{ IS_IR=0;}
+    
+    IrReceiver.resume();
+  }
+}
+// 車の動作実行
+void do_Drive_Tick()
+{
+  switch (Drive_Num) 
+  {
+    case GO_ADVANCE: go_Advance(); break;
+    case GO_LEFT:    go_Left();    break;
+    case GO_RIGHT:   go_Right();   break;
+    case GO_BACK:    go_Back();    break;
+    case STOP_STOP:  stop_Stop();   break;
+  }
+}
+void setup(){
+  pinMode(RightDirectPin1, OUTPUT); 
+  pinMode(RightDirectPin2, OUTPUT); 
+  pinMode(speedPinL, OUTPUT);  
+  pinMode(LeftDirectPin1, OUTPUT);
+  pinMode(LeftDirectPin2, OUTPUT); 
+  pinMode(speedPinR, OUTPUT); 
+  
+  pinMode(BUZZ_PIN, OUTPUT);
+  digitalWrite(BUZZ_PIN, HIGH); 
+
+  pinMode(LFSensor_bl, INPUT);
+  pinMode(LFSensor_br, INPUT);
+  pinMode(Trig_PIN, OUTPUT); 
+  pinMode(Echo_PIN, INPUT); 
+  digitalWrite(Trig_PIN, LOW);
+
+  headServo.attach(SERVO_PIN);
+  headServo.write(90);     // 起動時に正面(90度)
+
+  stop_Stop();
+  IrReceiver.begin(IR_RECEIVE_PIN, DISABLE_LED_FEEDBACK);        
+}
+void loop()
+{
+  do_IR_Tick();                           //リモコン入力受け付け
+  checkSensorsAndObstacles();    //センサーを確認し、必要なら状態書き換え
+  do_Drive_Tick();                      /状態に基づいてモーターを動かす
+}
