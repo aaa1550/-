@@ -75,8 +75,9 @@ for r0 in catalog['records']:
  if r0['id'].startswith('FCODE-') and r0['kind'] in ('codes','detailed','basic'):
   r=dict(r0)
   if not r['title'].startswith('旧版参考 / '):r['title']='旧版参考 / '+r['title']
-  prefix='旧版参考（5cm以下停止の設計）。今回使うコードはRemoteObstacleCar.inoです。\n'
-  if not str(r.get('content','')).startswith('旧版参考'):r['content']=prefix+r.get('content','')
+  prefix='以前のコード・設計の参考資料です。今回の走行コードはRemoteObstacleCar.inoです。\n'
+  content=re.sub(r'^旧版参考[^\n]*\n','',str(r.get('content','')))
+  if not content.startswith('以前のコード・設計の参考資料'):r['content']=prefix+content
   records.append(r)
 zipfile_path=src/'RemoteObstacleCar.zip'
 with zipfile.ZipFile(zipfile_path,'w',zipfile.ZIP_DEFLATED) as z:
