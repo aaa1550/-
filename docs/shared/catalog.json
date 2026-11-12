@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-11-12T15:26:18.359367+09:00",
+  "updatedAt": "2026-11-12T06:47:51.743Z",
   "records": [
     {
       "id": "LATEST-CODE",
@@ -1399,6 +1399,33 @@
       "visibility": "public",
       "created": "2026-11-12T15:26:18.359367+09:00",
       "shared": false
+    },
+    {
+      "id": "SHARED-9702d3a9-716d-4376-8604-8b17268e046f",
+      "group_id": "SHARED-9702d3a9-716d-4376-8604-8b17268e046f",
+      "name": "フローチャート.pptx",
+      "title": "フローチャート.pptx",
+      "category": "13_その他",
+      "description": "サイトから公開保存した原本",
+      "size": 1209968,
+      "created": "2026-11-12T06:47:15.416Z",
+      "visibility": "public",
+      "shared": true,
+      "publishedAt": "2026-11-12T06:47:49.588Z",
+      "url": "shared/files/2ba0d104-356e-4240-9749-c516c13360fc.pptx"
+    },
+    {
+      "id": "BACKUP-bfa2174d-9f1c-4f97-bdcc-677e1c5256e9",
+      "group_id": "BACKUP-bfa2174d-9f1c-4f97-bdcc-677e1c5256e9",
+      "name": "osoyoo-shared-2026-11-12T06-47-51-743Z.json",
+      "title": "公開保存データ一式（2026/11/12 15:47:51）",
+      "url": "shared/backups/BACKUP-bfa2174d-9f1c-4f97-bdcc-677e1c5256e9.json",
+      "size": 1613981,
+      "created": "2026-11-12T06:47:51.743Z",
+      "category": "12_参考資料",
+      "description": "この公開保存で登録したデータ・添付のJSONバックアップ。別PCでダウンロード・復元できます。",
+      "visibility": "public",
+      "shared": true
     }
   ]
 }
