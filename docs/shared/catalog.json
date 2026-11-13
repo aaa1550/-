@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-11-13T14:20:23.677096+09:00",
+  "updatedAt": "2026-11-13T07:06:30.373Z",
   "records": [
     {
       "id": "LATEST-CODE",
@@ -1676,6 +1676,33 @@
       "visibility": "public",
       "created": "2026-11-13T14:20:23.677096+09:00",
       "shared": false
+    },
+    {
+      "id": "SHARED-6a597be9-f5a5-4a9b-97f3-06a59235345c",
+      "group_id": "SHARED-6a597be9-f5a5-4a9b-97f3-06a59235345c",
+      "name": "完成コート.txt",
+      "title": "完成コート.txt",
+      "category": "13_その他",
+      "description": "サイトから公開保存した原本",
+      "size": 5042,
+      "created": "2026-11-13T07:05:37.702Z",
+      "visibility": "public",
+      "shared": true,
+      "publishedAt": "2026-11-13T07:06:29.475Z",
+      "url": "shared/files/256a0af2-423c-4399-9619-4cb2f2800fad.txt"
+    },
+    {
+      "id": "BACKUP-940e34e6-bdd6-40ab-9290-84ce0d63f6f6",
+      "group_id": "BACKUP-940e34e6-bdd6-40ab-9290-84ce0d63f6f6",
+      "name": "osoyoo-shared-2026-11-13T07-06-30-373Z.json",
+      "title": "公開保存データ一式（2026/11/13 16:06:30）",
+      "url": "shared/backups/BACKUP-940e34e6-bdd6-40ab-9290-84ce0d63f6f6.json",
+      "size": 7395,
+      "created": "2026-11-13T07:06:30.373Z",
+      "category": "12_参考資料",
+      "description": "この公開保存で登録したデータ・添付のJSONバックアップ。別PCでダウンロード・復元できます。",
+      "visibility": "public",
+      "shared": true
     }
   ]
 }

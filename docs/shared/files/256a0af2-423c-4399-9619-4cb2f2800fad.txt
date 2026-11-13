@@ -1,0 +1,196 @@
+#include <Arduino.h>
+
+#define IR_USE_AVR_TIMER2
+#include <IRremote.hpp>
+
+// モーターのピン
+#define speedPinR         9
+#define RightDirectPin1  12
+#define RightDirectPin2  11
+#define speedPinL         6
+#define LeftDirectPin1    7
+#define LeftDirectPin2    8
+
+// リモコン
+#define IR_RECEIVE_PIN    4
+#define IR_ADVANCE       24
+#define IR_BACK          82
+#define IR_RIGHT         90
+#define IR_LEFT           8
+#define IR_STOP          28
+
+// 速度：0～255
+#define MOVE_SPEED      180
+#define TURN_SPEED      180
+#define HOLD_TIMEOUT_MS 250UL
+#define DIRECTION_STOP_MS 100UL
+
+enum Direction { STOP, FORWARD, BACKWARD, RIGHT, LEFT };
+Direction requested = STOP;
+bool holdActive = false;
+uint32_t lastReceivedAt = 0;
+uint16_t lastCommand = 0;
+uint16_t lastAddress = 0;
+decode_type_t lastProtocol = UNKNOWN;
+int appliedRight = 0;
+int appliedLeft = 0;
+bool stopTimingActive = false;
+uint32_t stoppedAt = 0;
+
+void stopMotors() {
+  analogWrite(speedPinR, 0);
+  analogWrite(speedPinL, 0);
+  digitalWrite(RightDirectPin1, LOW);
+  digitalWrite(RightDirectPin2, LOW);
+  digitalWrite(LeftDirectPin1, LOW);
+  digitalWrite(LeftDirectPin2, LOW);
+  if (appliedRight != 0 || appliedLeft != 0) {
+    stoppedAt = millis();
+    stopTimingActive = true;
+  }
+  appliedRight = 0;
+  appliedLeft = 0;
+}
+
+void cancelMovement() {
+  requested = STOP;
+  holdActive = false;
+  stopMotors();
+}
+
+void checkHoldTimeout() {
+  if (holdActive &&
+      uint32_t(millis() - lastReceivedAt) >= HOLD_TIMEOUT_MS) {
+    cancelMovement();
+  }
+}
+
+Direction getDirection(uint16_t command) {
+  switch (command) {
+    case IR_ADVANCE: return FORWARD;
+    case IR_BACK:    return BACKWARD;
+    case IR_RIGHT:   return RIGHT;
+    case IR_LEFT:    return LEFT;
+    default:         return STOP;
+  }
+}
+
+bool sameRemote(uint16_t address, decode_type_t protocol) {
+  bool currentNEC = protocol == NEC || protocol == NEC2;
+  bool previousNEC = lastProtocol == NEC || lastProtocol == NEC2;
+  return address == lastAddress &&
+         (protocol == lastProtocol || (currentNEC && previousNEC));
+}
+
+void readRemote() {
+  checkHoldTimeout();
+  if (!IrReceiver.decode()) {
+    return;
+  }
+  uint16_t command = IrReceiver.decodedIRData.command;
+  uint16_t address = IrReceiver.decodedIRData.address;
+  decode_type_t protocol = IrReceiver.decodedIRData.protocol;
+  uint8_t flags = IrReceiver.decodedIRData.flags;
+  IrReceiver.resume();
+
+  if (protocol == UNKNOWN ||
+      (flags & IRDATA_FLAGS_WAS_OVERFLOW) ||
+      (flags & IRDATA_FLAGS_PARITY_FAILED)) {
+    cancelMovement();
+    return;
+  }
+  if (command == IR_STOP) {
+    cancelMovement();
+    return;
+  }
+  // 同じリモコンの長押し信号で走行を継続
+  if (flags & IRDATA_FLAGS_IS_REPEAT) {
+    if (holdActive && command == lastCommand &&
+        sameRemote(address, protocol)) {
+      lastReceivedAt = millis();
+    }
+    return;
+  }
+  Direction direction = getDirection(command);
+  if (direction == STOP) {
+    return;
+  }
+  requested = direction;
+  holdActive = true;
+  lastReceivedAt = millis();
+  lastCommand = command;
+  lastAddress = address;
+  lastProtocol = protocol;
+}
+
+void driveMotors() {
+  if (!holdActive || requested == STOP) {
+    stopMotors();
+    return;
+  }
+  int right = 0;
+  int left = 0;
+  switch (requested) {
+    case FORWARD:
+      right = MOVE_SPEED;
+      left = MOVE_SPEED;
+      break;
+    case BACKWARD:
+      right = -MOVE_SPEED;
+      left = -MOVE_SPEED;
+      break;
+    case RIGHT:
+      right = -TURN_SPEED;
+      left = TURN_SPEED;
+      break;
+    case LEFT:
+      right = TURN_SPEED;
+      left = -TURN_SPEED;
+      break;
+    default:
+      stopMotors();
+      return;
+  }
+  bool reversing =
+      (appliedRight > 0 && right < 0) ||
+      (appliedRight < 0 && right > 0) ||
+      (appliedLeft > 0 && left < 0) ||
+      (appliedLeft < 0 && left > 0);
+  if (reversing) {
+    stopMotors();
+  }
+  if (stopTimingActive) {
+    if (uint32_t(millis() - stoppedAt) < DIRECTION_STOP_MS) {
+      return;
+    }
+    stopTimingActive = false;
+  }
+  digitalWrite(RightDirectPin1, right > 0 ? HIGH : LOW);
+  digitalWrite(RightDirectPin2, right < 0 ? HIGH : LOW);
+  digitalWrite(LeftDirectPin1, left > 0 ? HIGH : LOW);
+  digitalWrite(LeftDirectPin2, left < 0 ? HIGH : LOW);
+  analogWrite(speedPinR, right < 0 ? -right : right);
+  analogWrite(speedPinL, left < 0 ? -left : left);
+  appliedRight = right;
+  appliedLeft = left;
+}
+
+void setup() {
+  pinMode(speedPinR, OUTPUT);
+  pinMode(RightDirectPin1, OUTPUT);
+  pinMode(RightDirectPin2, OUTPUT);
+  pinMode(speedPinL, OUTPUT);
+  pinMode(LeftDirectPin1, OUTPUT);
+  pinMode(LeftDirectPin2, OUTPUT);
+  // 元の回路のブザーをOFF（LOWで鳴る想定）
+  digitalWrite(13, HIGH);
+  pinMode(13, OUTPUT);
+  stopMotors();
+  IrReceiver.begin(IR_RECEIVE_PIN, DISABLE_LED_FEEDBACK);
+}
+
+void loop() {
+  readRemote();
+  checkHoldTimeout();
+  driveMotors();
+}
