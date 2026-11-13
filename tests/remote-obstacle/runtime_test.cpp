@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
+#include <initializer_list>
 #include "stubs/Arduino.h"
 #include "stubs/IRremote.hpp"
 uint32_t fakeNow=0;
@@ -19,6 +20,7 @@ void key(uint16_t cmd,uint8_t flags=0) {
 }
 void fresh() {
  fakeNow=0;resetToStop();sensorSampled=false;
+ IrReceiver.decodedIRData.protocol=NEC;IrReceiver.decodedIRData.address=0;
  buzzerRunning=false;directionWaiting=false;
  for(int i=0;i<32;i++){pins[i]=HIGH;pwm[i]=0;}
  stop_Stop();sample(30);
@@ -48,12 +50,12 @@ int main(){
  key(IR_BACK);sample(5,true);checkSensorsAndObstacles();assert(Drive_Num==STOP_STOP);
  key(IR_BACK);sample(10,true);checkSensorsAndObstacles();assert(Drive_Num==GO_ADVANCE);
  sample(5,true);checkSensorsAndObstacles();assert(Drive_Num==STOP_STOP);
- // 手動旋回と指令保持。
+ // 手動旋回と長押し期限。
  fresh();key(IR_RIGHT);checkSensorsAndObstacles();do_Drive_Tick();assert(pins[RightDirectPin2]==HIGH&&pins[LeftDirectPin1]==HIGH);
  key(IR_LEFT);checkSensorsAndObstacles();do_Drive_Tick();assert(directionWaiting);
  fakeNow=DIRECTION_STOP_MS;do_Drive_Tick();assert(pins[RightDirectPin1]==HIGH&&pins[LeftDirectPin2]==HIGH);
  key(999);checkSensorsAndObstacles();assert(Drive_Num==GO_LEFT);
- fakeNow=10000;checkSensorsAndObstacles();assert(Drive_Num==GO_LEFT);
+ fakeNow=10000;checkSensorsAndObstacles();assert(Drive_Num==STOP_STOP);
  // 無応答は安全な距離に化けず停止。オーバーフローも停止。
  sample(-1);checkSensorsAndObstacles();assert(Drive_Num==STOP_STOP);
  key(IR_ADVANCE);sample(30);checkSensorsAndObstacles();key(IR_ADVANCE,IRDATA_FLAGS_WAS_OVERFLOW);assert(Remote_Num==STOP_STOP);
@@ -73,8 +75,55 @@ int main(){
  fakeNow=120;echoUs=301;pins[LFSensor_br]=LOW;updateSensors();assert(front&&back);
  // 自動回避の上限・時計の折り返し。
  fresh();fakeNow=0xffffff00U;key(IR_ADVANCE);sample(4);checkSensorsAndObstacles();
- fakeNow=uint32_t(0xffffff00U+AUTO_MAX_MS);checkSensorsAndObstacles();assert(Drive_Num==STOP_STOP);
+ for(uint32_t elapsed=100;elapsed<=AUTO_MAX_MS;elapsed+=100){
+ fakeNow=uint32_t(0xffffff00U+elapsed);key(IR_ADVANCE,IRDATA_FLAGS_IS_REPEAT);checkSensorsAndObstacles();
+ if(elapsed<AUTO_MAX_MS) assert(Drive_Num==GO_BACK);
+ }
+ assert(Drive_Num==STOP_STOP);
  fresh();fakeNow=0xfffffff0U;sample(5);warning();assert(pins[BUZZ_PIN]==LOW);
  fakeNow=uint32_t(0xfffffff0U+100U);warning();assert(pins[BUZZ_PIN]==LOW);
- puts("PASS: real sketch logic, 15/5cm boundaries, forced reverse, rear advance, progressive buzzer, STOP, simultaneous obstacles, motor reversal pause, sensor failure, remote hold, timeout and timer wrap");
+ // 4方向は長押しをやめると期限ちょうどで停止する。
+ for(uint16_t cmd:{IR_ADVANCE,IR_BACK,IR_LEFT,IR_RIGHT}) {
+  fresh();key(cmd);checkSensorsAndObstacles();do_Drive_Tick();
+  assert(Drive_Num!=STOP_STOP);
+  fakeNow=HOLD_TIMEOUT_MS-1;checkSensorsAndObstacles();assert(Drive_Num!=STOP_STOP);
+  fakeNow=HOLD_TIMEOUT_MS;checkSensorsAndObstacles();do_Drive_Tick();
+  assert(Drive_Num==STOP_STOP&&pwm[speedPinR]==0&&pwm[speedPinL]==0&&!holdActive);
+ }
+ // 繰り返し受信中は継続し、NEC→NEC2の変化も受け付ける。
+ fresh();key(IR_ADVANCE);
+ for(uint32_t t=100;t<=1000;t+=100) {
+  fakeNow=t;IrReceiver.decodedIRData.protocol=NEC2;
+  key(IR_ADVANCE,IRDATA_FLAGS_IS_REPEAT);checkSensorsAndObstacles();
+  assert(Drive_Num==GO_ADVANCE);
+ }
+ fakeNow=1250;checkSensorsAndObstacles();assert(Drive_Num==STOP_STOP);
+ key(IR_ADVANCE,IRDATA_FLAGS_IS_REPEAT);checkSensorsAndObstacles();assert(Drive_Num==STOP_STOP);
+ key(IR_ADVANCE);checkSensorsAndObstacles();assert(Drive_Num==GO_ADVANCE);
+ // 期限切れ時に届いたリピートでも復活しない。
+ fresh();key(IR_ADVANCE);fakeNow=250;key(IR_ADVANCE,IRDATA_FLAGS_IS_REPEAT);
+ checkSensorsAndObstacles();assert(Drive_Num==STOP_STOP);
+ // 別送信元、別プロトコル、別キー、未知キーでは期限を延長しない。
+ for(int test=0;test<4;test++) {
+  fresh();key(IR_ADVANCE);fakeNow=200;
+  if(test==0) IrReceiver.decodedIRData.address=1;
+  if(test==1) IrReceiver.decodedIRData.protocol=SONY;
+  key(test==2?IR_BACK:test==3?999:IR_ADVANCE,test==3?0:IRDATA_FLAGS_IS_REPEAT);
+  fakeNow=250;checkSensorsAndObstacles();assert(Drive_Num==STOP_STOP);
+ }
+ // 自動回避中も、離すと停止。繰り返しで再始動しない。
+ for(bool rear:{false,true}) {
+  fresh();key(IR_ADVANCE);sample(rear?30:4,rear);
+  checkSensorsAndObstacles();assert(avoidMode!=AVOID_NONE);
+  fakeNow=250;checkSensorsAndObstacles();do_Drive_Tick();
+  assert(Drive_Num==STOP_STOP&&pwm[speedPinR]==0);
+  key(IR_ADVANCE,IRDATA_FLAGS_IS_REPEAT);checkSensorsAndObstacles();assert(Drive_Num==STOP_STOP);
+ }
+ fresh();key(IR_ADVANCE);key(IR_ADVANCE,IRDATA_FLAGS_PARITY_FAILED);
+ assert(!holdActive&&Remote_Num==STOP_STOP);
+ // 長押し期限はmillisの折り返しでも正しく動く。
+ fresh();fakeNow=0xffffff80U;key(IR_RIGHT);
+ fakeNow=uint32_t(0xffffff80U+249U);checkSensorsAndObstacles();assert(Drive_Num==GO_RIGHT);
+ fakeNow=uint32_t(0xffffff80U+250U);checkSensorsAndObstacles();assert(Drive_Num==STOP_STOP);
+ puts("PASS: hold/release in all directions, valid repeats, stale repeat rejection, NEC/NEC2, sender matching, parity failure, release during avoidance; real sketch logic, 15/5cm boundaries, forced reverse, rear advance, progressive buzzer, STOP, simultaneous obstacles, motor reversal pause, sensor failure, remote hold, timeout and timer wrap");
 }

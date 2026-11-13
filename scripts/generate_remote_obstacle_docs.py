@@ -8,27 +8,31 @@ records=[];files=[]
 links='LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN'
 def record(id,kind,title,**kw):
  r=dict(id=id,kind=kind,title=title,visibility='public',updated=now,links=links,**kw);records.append(r);return r
-record('LATEST-CODE','codes','今回の仕様 / RemoteObstacleCar.ino（define・1ファイル）',filename='RemoteObstacleCar.ino',category='今回の仕様・define版',code=code,content='前方15cm以内で距離に応じたブザー、5cm以下で強制後退、後方検知で前進。OK優先・前後同時停止。#defineで設定、独自ヘッダー不要。旧FlowchartRobotの5cm停止とは動作が異なる。',status='実機未検証',pins='ENA D5 / ENB D6 / Servo D9 / Echo D3 / Trig D10 / IR受信 D4 / ブザー D13 / 後方 D0,D2',libraries='IRremote 4.4.1 / Servo 1.2.2 / Arduino Uno')
+record('LATEST-CODE','codes','今回の仕様 / RemoteObstacleCar.ino（長押し・define）',filename='RemoteObstacleCar.ino',category='今回の仕様・define版',code=code,content='方向は長押し中だけ有効。最終受信から250ms以上途切れたら回避中も停止。前方15cm以内でブザー、5cm以下で後退、後方検知で前進。OK優先・前後同時停止。#defineで設定、独自ヘッダー不要。旧FlowchartRobotの5cm停止とは動作が異なる。',status='実機未検証',pins='ENA D5 / ENB D6 / Servo D9 / Echo D3 / Trig D10 / IR受信 D4 / ブザー D13 / 後方 D0,D2',libraries='IRremote 4.4.1 / Servo 1.2.2 / Arduino Uno')
 record('LATEST-SPEC','basic','今回の仕様：15cmで警告・5cmで後退・後方検知で前進',category='今回の仕様',content=guide,status='設計済み')
 info={
+'updateRemoteHold':('長押し終了を受信間隔で検知する','長押し中で最終受信から250ms以上経過したらresetToStop。差分計算で時計の折り返しを扱う。','なし','なし','holdActive、lastRemoteAt、millis','指令・回避の停止','millis, resetToStop'),
+'decodeRemoteDirection':('方向キーを車両の動作へ変換する','24=前進、82=後退、90=右、8=左。その他はSTOP_STOPを返し、呼出側で未使用キーとして無視する。','command: リモコンコマンド','DN: 動作','コマンド値','動作列挙型','なし'),
+'isSameRemote':('繰り返し信号の送信元を照合する','前回と同じアドレス・通信方式かを比較する。NECとNEC2は同じ系統として扱う。','address:アドレス、protocol:通信方式','bool: 一致ならtrue','現在の受信情報、前回受信情報','照合結果','なし'),
+
 'setMotors':('左右モーターへ方向とPWMを出す','符号からIN1/IN2を設定し、絶対値をPWMへ出力。実際に出した左右速度を記録する。','rightSpeed/leftSpeed: -255〜255の符号付きPWM','なし','左右速度','方向ピン、PWM、appliedRight/Left','digitalWrite, analogWrite'),
 'go_Advance':('前進する','左右に正のDriveSpeedを渡す。自動回避時も同じ関数を使用する。','なし','なし','DriveSpeed','左右前進','setMotors'),
 'go_Back':('後退する','左右に負のDriveSpeedを渡す。前方5cm以下の強制後退でも使用する。','なし','なし','DriveSpeed','左右後退','setMotors'),
 'go_Right':('右旋回する','右を逆転、左を正転させる。','なし','なし','DriveSpeed','右旋回','setMotors'),
 'go_Left':('左旋回する','右を正転、左を逆転させる。','なし','なし','DriveSpeed','左旋回','setMotors'),
 'stop_Stop':('モーターへ停止指令を出す','最初に両PWMを0、その後に方向ピンをLOWにする。前回の出力速度も0に更新。','なし','なし','固定ピン設定','左右PWM0、方向LOW','analogWrite, digitalWrite'),
-'resetToStop':('自動回避と古い操作を解除する','Remote_NumとDrive_NumをSTOP_STOP、速度0、回避モードなしへ戻す。モーターへの出力は後段で行う。','なし','なし','制御状態','停止状態・旧指令解除','なし'),
-'do_IR_Tick':('リモコンの方向指令を更新する','既知キー24/82/90/8/28を方向またはSTOPへ変換。リピートは新規指令にせず、未知キーは無視。オーバーフローでは停止。方向は次の操作まで保持する。','なし','なし','IRremoteのcommand/flags','Remote_Num、STOP時は回避状態も解除','IrReceiver.decode, resetToStop, IrReceiver.resume'),
+'resetToStop':('自動回避と古い操作を解除する','Remote_NumとDrive_NumをSTOP_STOP、速度0、回避モードなしへ戻す。holdActiveもfalseにして古いリピートでの復活を防ぐ。モーターへの出力は後段で行う。','なし','なし','制御状態','停止状態・旧指令解除','なし'),
+'do_IR_Tick':('リモコンの方向指令を更新する','最初に長押し期限を判定。既知キー24/82/90/8で開始、28は停止。期限内の同じ方向・送信元のリピートだけ最終受信時刻を延長。期限切れや停止後のリピートでは再始動しない。受信異常は停止。','なし','なし','IRremoteのcommand/flags/address/protocol','Remote_Num、holdActive、lastRemoteAtなど','updateRemoteHold, IrReceiver.decode, IrReceiver.resume, resetToStop, isSameRemote, decodeRemoteDirection, millis'),
 'watch':('超音波距離を計測する','Trigに10μsパルスを出し、Echo HIGHを最大15000μs測定。パルス長×0.01657をcmとして返す。タイムアウト0は-1で返す。','なし','float: 距離cm、失敗時-1','Echo D3、Trig D10','丸め前の距離','digitalWrite, delayMicroseconds, pulseIn'),
 'updateSensors':('前方距離と後方検知を更新する','60ms周期でwatchを実行。5cm以下をfront=1にする。後方は毎ループ、左右いずれかLOWならback=1。','なし','なし','Echo、後方D0/D2、millis','distanceCm、distanceValid、front、back','millis, watch, digitalRead'),
-'checkSensorsAndObstacles':('今回の仕様で実行動作を決める','STOP→測定失敗→前方5cm以下と後方同時→回避上限→継続中の回避→5cm以下の後退→後方検知の前進→通常操作。前方回避は15cm超、後方回避は後方検知解除で停止。回避3秒で打ち切り。','なし','なし','Remote_Num、距離、front/back、回避状態、millis','Drive_Num、DriveSpeed、avoidMode、回避終了時の旧指令解除','millis, resetToStop'),
+'checkSensorsAndObstacles':('今回の仕様で実行動作を決める','長押し期限→STOP→測定失敗→前方5cm以下と後方同時→回避上限→継続中の回避→5cm以下の後退→後方検知の前進→通常操作。前方回避は15cm超、後方回避は後方検知解除で停止。回避3秒で打ち切り。','なし','なし','Remote_Num、距離、front/back、回避状態、millis','Drive_Num、DriveSpeed、avoidMode、回避終了時の旧指令解除','updateRemoteHold, millis, resetToStop'),
 'getBuzzerPeriod':('近づくほど警告周期を短くする','15cm=600ms、5cm以下=100ms。間は線形補間し、10cm=350msになる。呼出側が15cm以内かを判定する。','cm: 前方距離cm','uint32_t: ブザー周期ms','前方距離','周期（ms）','なし'),
 'warning':('距離に応じたブザーを鳴らす','15cm以内なら先頭35msだけONにし、距離に応じた周期で反復。15cm超または測定無効ならOFF。delay/toneは使わない。停止中も距離警告を続ける。','なし','なし','distanceCm、distanceValid、millis','D13のLOW/HIGH','millis, getBuzzerPeriod, digitalWrite'),
 'do_Drive_Tick':('実行動作をモーターへ反映する','停止なら直ちにPWM0。反転を伴う場合もPWM0にして100ms待ち、その間は関数から戻る。時間経過後に方向別の関数を呼ぶ。','なし','なし','Drive_Num、DriveSpeed、前回出力、millis','モーター出力、反転待ち状態','millis, stop_Stop, go_Advance, go_Back, go_Right, go_Left'),
 'setup':('停止状態で初期化する','I/Oを設定し停止。ブザーOFF、Trig LOW。サーボを90度へ向けて400ms待ち、IR受信を開始。','なし','なし','ピン設定','#defineに沿った初期状態','pinMode, stop_Stop, resetToStop, digitalWrite, Servo.attach, Servo.write, delay, IrReceiver.begin'),
-'loop':('リモコン・センサー・回避・ブザー・モーターを繰り返し更新する','IR→センサー→IR再確認→車両状態→ブザー→モーター。超音波待機中に届いたSTOPも出力前に取り込む。','なし','なし','リモコン、センサー','モーター、ブザー','do_IR_Tick, updateSensors, checkSensorsAndObstacles, warning, do_Drive_Tick'),
+'loop':('リモコン・センサー・回避・ブザー・モーターを繰り返し更新する','長押し期限・IR→センサー→IR再確認→車両状態→ブザー→モーター。超音波待機中に届いたSTOPも出力前に取り込む。','なし','なし','リモコン、センサー','モーター、ブザー','do_IR_Tick, updateSensors, checkSensorsAndObstacles, warning, do_Drive_Tick'),
 }
-forms={m.group(2):m.group(1)+' '+m.group(2)+'('+m.group(3)+')' for m in re.finditer(r'^(void|float|uint32_t)\s+(\w+)\(([^)]*)\)\s*\{',code,re.M)}
+forms={m.group(2):m.group(1)+' '+m.group(2)+'('+m.group(3)+')' for m in re.finditer(r'^(void|float|uint32_t|bool|DN)\s+(\w+)\(([^)]*)\)\s*\{',code,re.M)}
 assert set(forms)==set(info),(set(forms)-set(info),set(info)-set(forms))
 e=lambda s:html.escape(str(s)).replace('\n','<br>')
 sheets=[]
@@ -37,13 +41,39 @@ for i,(name,form) in enumerate(forms.items(),1):
  record(f'LATEST-FD-{i:02}','detailed','今回の仕様 / '+name,function=name,category='今回の仕様・define版',functionForm=form,overview=overview,processing=processing,args=args,returns=returns,input=inp,output=out,sourceFile='RemoteObstacleCar/RemoteObstacleCar.ino',calledFunctions=called,designLayout='function-sheet-v1',content=overview+'\n'+processing,status='実機未検証')
  sheets.append('<section><h1>関数設計書</h1><h2>'+e(name)+'</h2><table><tr><th>機能概要</th><td colspan="2">'+e(overview)+'</td></tr><tr><th>処理内容</th><td colspan="2">'+e(processing)+'</td></tr><tr><th>関数形式</th><td colspan="2"><code>'+e(form)+'</code></td></tr><tr><th rowspan="4">入出力</th><th>引数</th><td>'+e(args)+'</td></tr><tr><th>戻り値</th><td>'+e(returns)+'</td></tr><tr><th>入力</th><td>'+e(inp)+'</td></tr><tr><th>出力</th><td>'+e(out)+'</td></tr><tr><th>ソースファイル</th><td colspan="2">RemoteObstacleCar/RemoteObstacleCar.ino</td></tr><tr><th>呼び出し関数</th><td colspan="2">'+e(called)+'</td></tr></table><p>今回の仕様：15cmで警告・5cmで強制後退・後方検知で前進 / 実機未検証</p></section>')
 style='body{font-family:Meiryo,sans-serif;color:#17212e;margin:24px;background:#edf1f4}main,section{max-width:1040px;background:white;padding:28px;margin:0 auto 24px}h1{font-size:26px}h2{font-size:20px}table{width:100%;border-collapse:collapse}td,th{border:1px solid #aab4bf;padding:13px;text-align:left;vertical-align:top}th{background:#f1f5f8}td{line-height:1.7;overflow-wrap:anywhere}a,button{color:#086b70}nav{display:flex;flex-wrap:wrap;gap:18px;margin:20px 0}pre{overflow:auto;background:#101b29;color:#e3edf7;padding:20px;font-size:14px;line-height:1.65;border-radius:8px}.note{border-left:4px solid #d88a24;padding:12px;background:#fff6e8}@media(max-width:600px){body{margin:8px}main,section{padding:16px}table{font-size:13px}}@media print{body{background:white;margin:0}section{break-after:page}section:last-child{break-after:auto}nav,button{display:none}pre{white-space:pre-wrap;background:white;color:black}}'
+def highlight_cpp(text):
+ result=[]
+ pattern=re.compile(r'"(?:\\.|[^"\\])*"|//.*|\b(?:void|bool|int|float|uint32_t|uint16_t|uint8_t|const|enum|return|if|else|switch|case|break|default|for|static_assert|DN|decode_type_t)\b|\b(?:HIGH|LOW|true|false|UNKNOWN|NEC2?|STOP_STOP|GO_\w+|AVOID_\w+)\b|\b[0-9]+(?:\.[0-9]+)?[fUL]*\b')
+ block=False
+ for number,line in enumerate(text.splitlines(),1):
+  stripped=line.lstrip()
+  if block or stripped.startswith('/*') or stripped.startswith('//'):
+   rendered='<span class="tok-comment">'+html.escape(line)+'</span>'
+   if '/*' in line:block=True
+   if '*/' in line:block=False
+  elif stripped.startswith('#'):
+   rendered='<span class="tok-directive">'+html.escape(line)+'</span>'
+  else:
+   rendered='';start=0
+   for m in pattern.finditer(line):
+    token=m.group();kind='string' if token.startswith('"') else 'comment' if token.startswith('//') else 'number' if token[0].isdigit() else 'constant' if token[0].isupper() or token in ('true','false') else 'keyword'
+    rendered+=html.escape(line[start:m.start()])+'<span class="tok-'+kind+'">'+html.escape(token)+'</span>';start=m.end()
+   rendered+=html.escape(line[start:])
+  result.append('<span class="code-line" data-line="'+str(number)+'">'+rendered+'</span>')
+ return '\n'.join(result)+'\n'
+style += '.code-line{display:inline-block;min-width:100%;white-space:pre}.code-line::before{content:attr(data-line);display:inline-block;width:3em;margin-right:1.5em;text-align:right;color:#6c8197;user-select:none}.tok-comment{color:#91a9bb}.tok-directive{color:#72dcf7}.tok-keyword{color:#d6a3ff}.tok-constant{color:#ffda85}.tok-string{color:#9fe8ac}.tok-number{color:#ffc38f}#copy{padding:10px 18px;background:#086b70;color:white;border:0;border-radius:6px}pre{line-height:1.9}'
 htmlpage=lambda title,body:'<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+html.escape(title)+'</title><style>'+style+'</style>'+body+'</html>'
 (design/'FunctionDesign.html').write_text(htmlpage('今回の仕様版・関数設計書', ''.join(sheets)))
 nav='<nav><a href="../../code/RemoteObstacleCar/RemoteObstacleCar.ino" download>この.inoをダウンロード</a><a href="../../code/RemoteObstacleCar/RemoteObstacleCar.zip" download>コード・手順・設計書一式</a><a href="FunctionDesign.html">関数設計書</a><a href="../../code/RemoteObstacleCar/README.md">配線・使用手順</a></nav>'
-summary='<table><tr><th>条件</th><th>動作</th></tr><tr><td>上・下・右・左</td><td>リモコンで前進・後退・右旋回・左旋回</td></tr><tr><td>前方15cm以内</td><td>近づくほどブザー間隔を短くする（15cm=600ms、10cm=350ms、5cm以下=100ms）</td></tr><tr><td>前方5cm以下</td><td>強制後退。15cmより離れたら停止</td></tr><tr><td>後方障害物</td><td>自動前進。後方検知がなくなったら停止</td></tr><tr><td>OK・超音波失敗・前後がふさがった</td><td>停止。回避完了後は新しい方向操作で再開</td></tr></table>'
-(design/'Code.html').write_text(htmlpage('今回の仕様：define版 RemoteObstacleCar', '<main><h1>今回の仕様：define宣言の1ファイル版</h1><p>RemoteObstacleCar.ino / Arduino UNO・OSOYOO Model X</p>'+summary+nav+'<p class="note">配線は前の修正版と同じです。元のcode.txtからは、右ENAをD9→D5、サーボ信号をD5→D9へ移してください。EchoはD3、後方はD0/D2です。UNOコンパイル・模擬I/Oテスト済み、実機走行は未検証。</p><button id="copy" type="button">コードをコピー</button><span id="message" role="status"></span><pre><code id="source">'+html.escape(code)+'</code></pre></main><script>document.getElementById("copy").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(document.getElementById("source").textContent);document.getElementById("message").textContent=" コピーしました"}catch{document.getElementById("message").textContent=" コードを選択してコピーしてください"}});</script>'))
+summary='<table><tr><th>条件</th><th>動作</th></tr><tr><td>上・下・右・左</td><td>長押し中のみ前進・後退・右旋回・左旋回</td></tr><tr><td>ボタンを離す・受信が途切れる</td><td>最終の有効受信から250ms以上で停止（回避中も同じ）</td></tr><tr><td>前方15cm以内</td><td>近づくほどブザー間隔を短くする（15cm=600ms、10cm=350ms、5cm以下=100ms）</td></tr><tr><td>前方5cm以下</td><td>強制後退。15cmより離れたら停止</td></tr><tr><td>後方障害物</td><td>自動前進。後方検知がなくなったら停止</td></tr><tr><td>OK・超音波失敗・前後がふさがった</td><td>停止。回避完了後は新しい方向操作で再開</td></tr></table>'
+(design/'Code.html').write_text(htmlpage('今回の仕様：define版 RemoteObstacleCar', '<main><h1>今回の仕様：長押し操作・define版</h1><p>RemoteObstacleCar.ino / Arduino UNO・OSOYOO Model X</p>'+summary+nav+'<p class="note">配線は前の修正版と同じです。元のcode.txtからは、右ENAをD9→D5、サーボ信号をD5→D9へ移してください。EchoはD3、後方はD0/D2です。UNOコンパイル・模擬I/Oテスト済み、実機走行は未検証。</p><button id="copy" type="button">コードをコピー</button><span id="message" role="status"></span><pre><code id="source">'+highlight_cpp(code)+'</code></pre></main><script>document.getElementById("copy").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(document.getElementById("source").textContent);document.getElementById("message").textContent=" コピーしました"}catch{document.getElementById("message").textContent=" コードを選択してコピーしてください"}});</script>'))
 # 既存の要件・テストを今回のユーザー指定へ整合させる。
 updates={
+'FR-001':('リモコン前進・長押し操作','上を長押ししている間だけ前進。有効受信が250ms以上途切れると停止。'),
+'FR-002':('リモコン後退・長押し操作','下を長押ししている間だけ後退。有効受信が250ms以上途切れると停止。後方検知時は自動前進。'),
+'FR-003':('リモコン左旋回・長押し操作','左を長押ししている間だけ左旋回。有効受信が250ms以上途切れると停止。'),
+'FR-004':('リモコン右旋回・長押し操作','右を長押ししている間だけ右旋回。有効受信が250ms以上途切れると停止。'),
+
 'FR-005':('前方超音波距離測定・15cmと5cmの判定','前方を60ms周期で測定。15cm以内で距離警告、5cm以下で強制後退。無応答は停止。'),
 'FR-006':('後方赤外線障害物検知','後方左右いずれかのデジタル入力がLOWなら障害物あり。取り付け・極性は実機確認。'),
 'FR-007':('距離に応じたブザー警告','15cm以内でブザー。15cm=600ms、10cm=350ms、5cm以下=100ms周期。ONは35ms、間は線形補間。'),
@@ -52,10 +82,15 @@ updates={
 'FR-010':('後方障害物からの自動前進','後方いずれかLOWで自動前進。後方検知解除で停止。前方5cm以下も同時なら停止。'),
 'FR-011':('前後がふさがった場合の停止','前方5cm以下かつ後方検知なら前進・後退・旋回せず停止。前方が5cm超15cm以内は警告域であり、後方回避の前進は可能。'),
 'FR-012':('回避後の停止と新規操作待ち','回避終了・異常・打ち切りでは古いリモコン指令を解除。もう一度方向キーを押して操作を再開する。'),
-'FR-014':('停止優先と強制回避','OK停止・測定失敗・前後同時停止を優先。次に前方5cm以下の後退または後方検知による前進、最後に手動操作。')}
+'FR-014':('停止優先と強制回避','長押し終了・OK停止・測定失敗・前後同時停止を優先。次に前方5cm以下の後退または後方検知による前進、最後に手動操作。')}
 for id,(title,content) in updates.items():
  r=dict(old[id]);r.update(title=title,content=content,status='実装中',updated=now,notes='今回のユーザー指定を反映。UNOコンパイル・模擬I/Oテスト済み、実機未検証。',links=links);records.append(r)
 expectations={
+'TC-001':'上の長押し中のみ前進。最後の有効受信から250ms以上で停止。',
+'TC-002':'下の長押し中のみ後退。最後の有効受信から250ms以上で停止。',
+'TC-003':'左の長押し中のみ左旋回。最後の有効受信から250ms以上で停止。',
+'TC-004':'右の長押し中のみ右旋回。最後の有効受信から250ms以上で停止。',
+
 'TC-005':'15cm超は警告なし、15cm以内は警告、5cm以下は後退。無応答は停止。',
 'TC-007':'15/10/5cmで周期600/350/100ms、ON35ms。近づくほど間隔が短い。',
 'TC-008':'前方5cm以下で強制後退する。後方も検知時・OK停止中は停止。',
@@ -70,6 +105,7 @@ for id,expected in expectations.items():
  if id=='TC-008':r['title']='前方5cm以下の強制後退'
  records.append(r)
 r=dict(old['BUG-001']);r.update(title='5cm境界と動作の仕様を確定',status='解決済み',content='今回のユーザー指定により、5cm以下で強制後退する。前方5cm以下と後方同時、OK、測定失敗は停止。',action='RemoteObstacleCar.inoと要件・テスト期待値を今回の指定へ更新。実機試験は未実施。',updated=now,links=links);records.append(r)
+record('TC-HOLD-001','tests','長押し継続・解除と回避中の停止',status='未実施',purpose='4方向と自動回避の長押し解除を確認',precondition='配線・センサー・受信状況を確認',steps='方向を長押しし、通常走行と自動回避中に離す。停止後はリピートのみを送る。',expected='有効受信から250ms以上で停止し、古いリピートでは再始動しない。押し直すと操作できる。',actual='',notes='模擬I/Oテスト済み。実機テストは未実施。')
 # 前の生成版は参考資料として保持し、違う動作であることを一覧に明示。
 for r0 in catalog['records']:
  if r0['id'].startswith('FCODE-') and r0['kind'] in ('codes','detailed','basic'):
