@@ -9,10 +9,14 @@
 |3.jpg|ブザー GND、VCC=3.3V、I/O=D13|ブザー信号をD13とする。LOWで鳴る極性はcode.txtの記載を使用。画像だけで鳴動極性までは確認できない。|
 |4.jpg|Model X ENA=D3、ENB=D6、方向12/11/7/8、サーボS=D9、サーボ電源5V|サーボ信号D9を採用。IRremoteのTimer2と競合するためENAのD3 PWMは採用せず、D5を使用。|
 |配線.jpg|HC-SR04 Echo=D2、Trig=D10、VCC=5V|画像のEcho=D2を使う設定をBoardPins.hへ追加。ただしD2の右後方センサーはA5へ移す必要がある。既定はcode.txtに合わせEcho=D3のまま。|
-|6.jpg|IR Receiver信号D4、GND、VCC=5V|IR受信D4、LEDフィードバック無効の設定へ反映。画像からリモコンのキー値や通信方式は決めず、code.txtのキー値を使用。|
+|6.jpg|IR Receiver信号D10、GND、VCC=5V|画像ではD10。超音波TrigのD10と重複するため、統合コードの受信信号はcode.txtのD4を使用。画像のD4という以前の説明を訂正。キー値はcode.txtを使用。|
 |5.jpg|OSOYOO 5-Channel IR Tracker。IR1=A0、IR2=A1、IR3=A2、IR4=A3、IR5=A4、VCC=5V/GND|画像を拡大してA0〜A4を確認。5チャンネル読み取り診断TrackerMonitorを追加。床面の追跡用資料で、後方障害物検知としての有効性は未確認。|
 |7.png|Arduino UNOのPWM端子D3/D5/D6/D9/D10/D11、D0=RX、D1=TX、A0〜A5|PWM/タイマー/共用端子を再確認し、ピン設定をBoardPins.hへ集約。ピン重複とモーターPWMの不適合をコンパイル時に検出。|
 |フローチャート4枚|メイン処理順、距離5cm/15cm、手動50%/30%、回避10%、RM/M|FlowchartLogic.hで実装。原図の遠距離フラグ、前後同時、停止・復帰の補足はREADMEに記載。|
+
+## 画像の接続例を併用する際の注意
+
+6.jpgのリモコン受信信号はD10、配線.jpgの超音波TrigもD10です。両画像は別々の接続例なので、そのまま同時には使えません。統合コードはIR受信をD4に変更して使用しています。
 
 ## 超音波配線を画像に合わせる場合
 
