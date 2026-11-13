@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "exportedAt": "2026-11-13T00:39:45.208Z",
+  "records": [],
+  "files": [
+    {
+      "id": "SHARED-eefcfe4d-c2ff-41a4-bb2b-b71d3770c6cf",
+      "group_id": "SHARED-eefcfe4d-c2ff-41a4-bb2b-b71d3770c6cf",
+      "name": "httpsosoyoo.com20200512osoyoo-v2-1-.txt",
+      "title": "httpsosoyoo.com20200512osoyoo-v2-1-.txt",
+      "category": "13_その他",
+      "description": "サイトから公開保存した原本",
+      "size": 81,
+      "created": "2026-11-13T00:39:09.066Z",
+      "visibility": "public",
+      "shared": true,
+      "publishedAt": "2026-11-13T00:39:44.491Z",
+      "url": "shared/files/bdc15059-1567-45c2-9c76-a542807c0a1c.txt",
+      "dataBase64": "aHR0cHM6Ly9vc295b28uY29tLzIwMjAvMDUvMTIvb3NveW9vLXYyLTEtcm9ib3QtY2FyLWtpdC1sZXNzb24tMS1iYXNpYy1yb2JvdC1jYXIv"
+    }
+  ]
+}

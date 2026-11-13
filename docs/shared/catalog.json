@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-11-12T06:47:51.743Z",
+  "updatedAt": "2026-11-13T00:39:45.208Z",
   "records": [
     {
       "id": "LATEST-CODE",
@@ -1422,6 +1422,33 @@
       "url": "shared/backups/BACKUP-bfa2174d-9f1c-4f97-bdcc-677e1c5256e9.json",
       "size": 1613981,
       "created": "2026-11-12T06:47:51.743Z",
+      "category": "12_参考資料",
+      "description": "この公開保存で登録したデータ・添付のJSONバックアップ。別PCでダウンロード・復元できます。",
+      "visibility": "public",
+      "shared": true
+    },
+    {
+      "id": "SHARED-eefcfe4d-c2ff-41a4-bb2b-b71d3770c6cf",
+      "group_id": "SHARED-eefcfe4d-c2ff-41a4-bb2b-b71d3770c6cf",
+      "name": "httpsosoyoo.com20200512osoyoo-v2-1-.txt",
+      "title": "httpsosoyoo.com20200512osoyoo-v2-1-.txt",
+      "category": "13_その他",
+      "description": "サイトから公開保存した原本",
+      "size": 81,
+      "created": "2026-11-13T00:39:09.066Z",
+      "visibility": "public",
+      "shared": true,
+      "publishedAt": "2026-11-13T00:39:44.491Z",
+      "url": "shared/files/bdc15059-1567-45c2-9c76-a542807c0a1c.txt"
+    },
+    {
+      "id": "BACKUP-64b0176c-7831-4c15-9f8a-54f40116f5f3",
+      "group_id": "BACKUP-64b0176c-7831-4c15-9f8a-54f40116f5f3",
+      "name": "osoyoo-shared-2026-11-13T00-39-45-208Z.json",
+      "title": "公開保存データ一式（2026/11/13 9:39:45）",
+      "url": "shared/backups/BACKUP-64b0176c-7831-4c15-9f8a-54f40116f5f3.json",
+      "size": 817,
+      "created": "2026-11-13T00:39:45.208Z",
       "category": "12_参考資料",
       "description": "この公開保存で登録したデータ・添付のJSONバックアップ。別PCでダウンロード・復元できます。",
       "visibility": "public",
