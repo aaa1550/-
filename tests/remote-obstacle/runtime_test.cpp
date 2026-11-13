@@ -4,7 +4,9 @@
 #include <initializer_list>
 #include "stubs/Arduino.h"
 #include "stubs/IRremote.hpp"
-uint32_t fakeNow=0;
+uint32_t fakeNow=0, fakeMicros=0;
+uint32_t pinHighAt[32]={}, pinLowAt[32]={};
+int pinWrites[32]={};
 int pins[32]={},pwm[32]={};
 unsigned long echoUs=2000;
 Receiver IrReceiver;
@@ -19,10 +21,10 @@ void key(uint16_t cmd,uint8_t flags=0) {
  IrReceiver.pending=true;do_IR_Tick();
 }
 void fresh() {
- fakeNow=0;resetToStop();sensorSampled=false;
+ fakeNow=0;fakeMicros=0;servoStarted=false;lastServoAt=0;resetToStop();sensorSampled=false;
  IrReceiver.decodedIRData.protocol=NEC;IrReceiver.decodedIRData.address=0;
  buzzerRunning=false;directionWaiting=false;
- for(int i=0;i<32;i++){pins[i]=HIGH;pwm[i]=0;}
+ for(int i=0;i<32;i++){pins[i]=HIGH;pwm[i]=0;pinWrites[i]=0;pinHighAt[i]=0;pinLowAt[i]=0;}
  stop_Stop();sample(30);
 }
 int main(){
@@ -125,5 +127,21 @@ int main(){
  fresh();fakeNow=0xffffff80U;key(IR_RIGHT);
  fakeNow=uint32_t(0xffffff80U+249U);checkSensorsAndObstacles();assert(Drive_Num==GO_RIGHT);
  fakeNow=uint32_t(0xffffff80U+250U);checkSensorsAndObstacles();assert(Drive_Num==STOP_STOP);
- puts("PASS: hold/release in all directions, valid repeats, stale repeat rejection, NEC/NEC2, sender matching, parity failure, release during avoidance; real sketch logic, 15/5cm boundaries, forced reverse, rear advance, progressive buzzer, STOP, simultaneous obstacles, motor reversal pause, sensor failure, remote hold, timeout and timer wrap");
+ // サーボは元のD5に約1.5ms、目標周期20msのパルスを出す。
+ fresh();pwm[speedPinR]=128;pwm[speedPinL]=77;fakeMicros=10000;keepHeadForward();
+ assert(pins[SERVO_PIN]==LOW&&pinWrites[SERVO_PIN]==2);
+ assert(uint32_t(pinLowAt[SERVO_PIN]-pinHighAt[SERVO_PIN])>=SERVO_CENTER_US);
+ assert(uint32_t(pinLowAt[SERVO_PIN]-pinHighAt[SERVO_PIN])<=SERVO_CENTER_US+4);
+ keepHeadForward();assert(pinWrites[SERVO_PIN]==2);
+ fakeMicros=10000+SERVO_PERIOD_US;keepHeadForward();assert(pinWrites[SERVO_PIN]==4);
+ assert(pwm[speedPinR]==128&&pwm[speedPinL]==77); // パルス処理は速度PWMへ書かない
+ fresh();fakeMicros=0xfffffff0U;keepHeadForward();
+ assert(uint32_t(pinLowAt[SERVO_PIN]-pinHighAt[SERVO_PIN])>=SERVO_CENTER_US);
+ fakeMicros=uint32_t(0xfffffff0U+SERVO_PERIOD_US);keepHeadForward();
+ assert(pinWrites[SERVO_PIN]==4);
+ // センサーを読む前後でサーボを動かしても、期限切れは走行を停止する。
+ fresh();key(IR_ADVANCE);fakeMicros=5000;keepHeadForward();
+ fakeNow=HOLD_TIMEOUT_MS;sample(30);checkSensorsAndObstacles();do_Drive_Tick();
+ assert(!holdActive&&pwm[speedPinR]==0);
+ puts("PASS: original pin layout, software servo pulse width/period/wrap and PWM isolation; hold/release in all directions, valid repeats, stale repeat rejection, NEC/NEC2, sender matching, parity failure, release during avoidance; real sketch logic, 15/5cm boundaries, forced reverse, rear advance, progressive buzzer, STOP, simultaneous obstacles, motor reversal pause, sensor failure, remote hold, timeout and timer wrap");
 }

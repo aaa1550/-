@@ -1,6 +1,7 @@
 /*
  * OSOYOO Robot Car / Arduino UNO / Model X
  *
+ * code.txtのピン番号・ボタン値・基本動作関数をそのまま使用。
  * 【操作】方向ボタンを長押ししている間だけ走行。離すと停止。
  * 【前方】15cm以内で警告音。近づくほど速く鳴り、5cm以下で後退。
  * 【後方】障害物を検知したら前進。
@@ -15,15 +16,14 @@
 // ============================================================================
 #define IR_USE_AVR_TIMER2
 #include <IRremote.hpp>  // Arduino-IRremote 4.4.1
-#include <Servo.h>       // Servo 1.2.2
 
 // ============================================================================
 // 2. ピン設定
 // ============================================================================
-// 元のcode.txtから、右ENAはD9→D5、サーボ信号はD5→D9へ変更。
-// ServoとIRremoteのタイマーと競合しないよう、速度PWMはD5/D6を使用。
+// code.txtと同じピン番号。配線の変更は不要。
+// サーボはソフトウェアのパルス出力にし、D9のPWMタイマーを専有しない。
 #define IR_RECEIVE_PIN      4
-#define speedPinR           5
+#define speedPinR           9
 #define RightDirectPin1    12
 #define RightDirectPin2    11
 #define speedPinL           6
@@ -34,7 +34,7 @@
 #define LFSensor_br         2
 #define Echo_PIN            3
 #define Trig_PIN           10
-#define SERVO_PIN           9
+#define SERVO_PIN           5
 #define REAR_ACTIVE_LEVEL LOW
 #define BUZZ_ACTIVE_LEVEL LOW
 
@@ -66,9 +66,14 @@
 #define BUZZ_FAST_MS       100UL
 #define BUZZ_ON_MS          35UL
 
+#define SERVO_CENTER_US   1500UL  // 正面付近。実機に合わせて微調整
+#define SERVO_PERIOD_US  20000UL  // 目標周期20ms（他処理により延びる）
+
 // 設定ミスをコンパイル時に検出する。
-static_assert(speedPinR == 5 && speedPinL == 6,
-              "UNO motor PWM must use D5/D6 with Servo and IRremote");
+static_assert(speedPinR == 9 && speedPinL == 6 && SERVO_PIN == 5,
+              "Keep the original code.txt motor and servo pins");
+static_assert(SERVO_CENTER_US >= 500 && SERVO_CENTER_US <= 2500 &&
+              SERVO_PERIOD_US > SERVO_CENTER_US, "Invalid servo pulse setting");
 static_assert(Echo_PIN != LFSensor_bl && Echo_PIN != LFSensor_br,
               "Echo and rear sensor pins must be different");
 static_assert(REVERSE_DISTANCE_CM > 0 &&
@@ -102,7 +107,6 @@ enum AvoidMode {
   AVOID_REAR
 };
 
-Servo headServo;
 DN Remote_Num = STOP_STOP;       // リモコンからの指令
 DN Drive_Num = STOP_STOP;        // 最終的に実行する動作
 AvoidMode avoidMode = AVOID_NONE;
@@ -123,6 +127,10 @@ uint32_t lastRemoteAt = 0;
 uint16_t lastRemoteCommand = 0;
 uint16_t lastRemoteAddress = 0;
 decode_type_t lastRemoteProtocol = UNKNOWN;
+
+// サーボのソフトウェアパルス（Timer1を使用しない）
+bool servoStarted = false;
+uint32_t lastServoAt = 0;
 
 // ブザーとモーター切り替えの状態
 bool buzzerRunning = false;
@@ -263,6 +271,25 @@ void do_IR_Tick() {
   lastRemoteCommand = command;
   lastRemoteAddress = address;
   lastRemoteProtocol = protocol;
+}
+
+// D5へ正面保持用のパルスを出す。割り込みは止めないためIR受信を継続できる。
+// 約1.5msだけ待機する。microsで経過時間を測り、割り込みの累積遅延を抑える。
+void keepHeadForward() {
+  const uint32_t now = micros();
+  if (servoStarted && uint32_t(now - lastServoAt) < SERVO_PERIOD_US) {
+    return;
+  }
+
+  servoStarted = true;
+  lastServoAt = now;
+  digitalWrite(SERVO_PIN, HIGH);
+
+  const uint32_t pulseStarted = micros();
+  while (uint32_t(micros() - pulseStarted) < SERVO_CENTER_US) {
+    // IRremoteとArduinoの時刻管理の割り込みは有効なまま。
+  }
+  digitalWrite(SERVO_PIN, LOW);
 }
 
 // ============================================================================
@@ -457,7 +484,7 @@ void do_Drive_Tick() {
 void setup() {
   const uint8_t outputs[] = {
     speedPinR, RightDirectPin1, RightDirectPin2,
-    speedPinL, LeftDirectPin1, LeftDirectPin2, BUZZ_PIN, Trig_PIN
+    speedPinL, LeftDirectPin1, LeftDirectPin2, BUZZ_PIN, Trig_PIN, SERVO_PIN
   };
   for (uint8_t pin : outputs) {
     pinMode(pin, OUTPUT);
@@ -471,17 +498,20 @@ void setup() {
   pinMode(LFSensor_br, INPUT);
   pinMode(Echo_PIN, INPUT);
 
-  headServo.attach(SERVO_PIN);
-  headServo.write(90);
-  delay(400);  // 起動時だけ正面合わせ。モーターは停止中。
+  digitalWrite(SERVO_PIN, LOW);
+  const uint32_t centerStarted = millis();
+  while (uint32_t(millis() - centerStarted) < 400UL) {
+    keepHeadForward();  // 起動時の正面合わせ。モーターは停止中。
+  }
   IrReceiver.begin(IR_RECEIVE_PIN, DISABLE_LED_FEEDBACK);
 }
 
 void loop() {
   do_IR_Tick();                 // 1. 長押し信号と停止ボタン
-  updateSensors();              // 2. 前方距離・後方障害物
-  do_IR_Tick();                 // 3. 測距中に届いた信号も反映
-  checkSensorsAndObstacles();   // 4. 停止 → 回避 → 手動操作
-  warning();                   // 5. 距離に応じた警告音
-  do_Drive_Tick();              // 6. モーターへ出力
+  keepHeadForward();            // 2. 元のD5でサーボを正面保持
+  updateSensors();              // 3. 前方距離・後方障害物
+  do_IR_Tick();                 // 4. 測距中に届いた信号も反映
+  checkSensorsAndObstacles();   // 5. 停止 → 回避 → 手動操作
+  warning();                   // 6. 距離に応じた警告音
+  do_Drive_Tick();              // 7. モーターへ出力
 }

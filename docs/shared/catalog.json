@@ -1,31 +1,31 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-11-13T13:15:29.358418+09:00",
+  "updatedAt": "2026-11-13T14:20:23.677096+09:00",
   "records": [
     {
       "id": "LATEST-CODE",
       "kind": "codes",
-      "title": "今回の仕様 / RemoteObstacleCar.ino（長押し・define）",
+      "title": "code.txtと同じピン / RemoteObstacleCar.ino（長押し）",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "filename": "RemoteObstacleCar.ino",
       "category": "今回の仕様・define版",
-      "code": "/*\n * OSOYOO Robot Car / Arduino UNO / Model X\n *\n * 【操作】方向ボタンを長押ししている間だけ走行。離すと停止。\n * 【前方】15cm以内で警告音。近づくほど速く鳴り、5cm以下で後退。\n * 【後方】障害物を検知したら前進。\n * 【停止】OK、長押し終了、センサー異常、前後同時検知を優先。\n *\n * 独自ヘッダー不要の1ファイル版。実機走行は未検証。\n */\n#include <Arduino.h>\n\n// ============================================================================\n// 1. ライブラリ\n// ============================================================================\n#define IR_USE_AVR_TIMER2\n#include <IRremote.hpp>  // Arduino-IRremote 4.4.1\n#include <Servo.h>       // Servo 1.2.2\n\n// ============================================================================\n// 2. ピン設定\n// ============================================================================\n// 元のcode.txtから、右ENAはD9→D5、サーボ信号はD5→D9へ変更。\n// ServoとIRremoteのタイマーと競合しないよう、速度PWMはD5/D6を使用。\n#define IR_RECEIVE_PIN      4\n#define speedPinR           5\n#define RightDirectPin1    12\n#define RightDirectPin2    11\n#define speedPinL           6\n#define LeftDirectPin1      7\n#define LeftDirectPin2      8\n#define BUZZ_PIN           13\n#define LFSensor_bl         0  // D0を使うためSerialは使用しない\n#define LFSensor_br         2\n#define Echo_PIN            3\n#define Trig_PIN           10\n#define SERVO_PIN           9\n#define REAR_ACTIVE_LEVEL LOW\n#define BUZZ_ACTIVE_LEVEL LOW\n\n// ============================================================================\n// 3. リモコン・距離・速度・時間の設定\n// ============================================================================\n#define IR_ADVANCE         24\n#define IR_BACK            82\n#define IR_RIGHT           90\n#define IR_LEFT             8\n#define IR_STOP            28\n\n#define WARNING_DISTANCE_CM 15.0f\n#define REVERSE_DISTANCE_CM  5.0f\n#define RELEASE_DISTANCE_CM 15.0f\n\n// PWMは0〜255。実機で動き出す速度と方向を確認して調整する。\n#define ADVANCE_SPEED     128\n#define BACK_SPEED         77\n#define TURN_SPEED         77\n#define AVOID_SPEED        80\n\n#define HOLD_TIMEOUT_MS    250UL  // 最終受信からこの時間途切れたら停止\n#define SENSOR_PERIOD_MS    60UL\n#define ECHO_TIMEOUT_US  15000UL  // この値だけ単位はμs\n#define DIRECTION_STOP_MS  100UL\n#define AUTO_MAX_MS       3000UL\n#define BUZZ_SLOW_MS       600UL\n#define BUZZ_FAST_MS       100UL\n#define BUZZ_ON_MS          35UL\n\n// 設定ミスをコンパイル時に検出する。\nstatic_assert(speedPinR == 5 && speedPinL == 6,\n              \"UNO motor PWM must use D5/D6 with Servo and IRremote\");\nstatic_assert(Echo_PIN != LFSensor_bl && Echo_PIN != LFSensor_br,\n              \"Echo and rear sensor pins must be different\");\nstatic_assert(REVERSE_DISTANCE_CM > 0 &&\n              WARNING_DISTANCE_CM > REVERSE_DISTANCE_CM &&\n              RELEASE_DISTANCE_CM >= WARNING_DISTANCE_CM,\n              \"Invalid distance thresholds\");\nstatic_assert(BUZZ_ON_MS < BUZZ_FAST_MS && BUZZ_FAST_MS <= BUZZ_SLOW_MS,\n              \"Invalid buzzer timing\");\nstatic_assert(HOLD_TIMEOUT_MS > 0 && HOLD_TIMEOUT_MS < 0x80000000UL,\n              \"Invalid hold timeout\");\nstatic_assert(ADVANCE_SPEED >= 0 && ADVANCE_SPEED <= 255 &&\n              BACK_SPEED >= 0 && BACK_SPEED <= 255 &&\n              TURN_SPEED >= 0 && TURN_SPEED <= 255 &&\n              AVOID_SPEED >= 0 && AVOID_SPEED <= 255,\n              \"PWM speed must be 0..255\");\n\n// ============================================================================\n// 4. 車両の状態\n// ============================================================================\nenum DN {\n  GO_ADVANCE,\n  GO_BACK,\n  GO_RIGHT,\n  GO_LEFT,\n  STOP_STOP\n};\n\nenum AvoidMode {\n  AVOID_NONE,\n  AVOID_FRONT,\n  AVOID_REAR\n};\n\nServo headServo;\nDN Remote_Num = STOP_STOP;       // リモコンからの指令\nDN Drive_Num = STOP_STOP;        // 最終的に実行する動作\nAvoidMode avoidMode = AVOID_NONE;\nint DriveSpeed = 0;\n\n// センサーの状態\nfloat distanceCm = -1.0f;\nbool distanceValid = false;\nbool sensorSampled = false;\nint front = 0;\nint back = 0;\nuint32_t sensorAt = 0;\nuint32_t avoidStarted = 0;\n\n// 長押しの状態。同じリモコンの有効な繰り返し信号だけで延長する。\nbool holdActive = false;\nuint32_t lastRemoteAt = 0;\nuint16_t lastRemoteCommand = 0;\nuint16_t lastRemoteAddress = 0;\ndecode_type_t lastRemoteProtocol = UNKNOWN;\n\n// ブザーとモーター切り替えの状態\nbool buzzerRunning = false;\nuint32_t buzzerCycleAt = 0;\nint appliedRight = 0;\nint appliedLeft = 0;\nbool directionWaiting = false;\nuint32_t directionStoppedAt = 0;\n\n// ============================================================================\n// 5. モーターの基本操作\n// ============================================================================\nvoid setMotors(int rightSpeed, int leftSpeed) {\n  digitalWrite(RightDirectPin1, rightSpeed > 0 ? HIGH : LOW);\n  digitalWrite(RightDirectPin2, rightSpeed < 0 ? HIGH : LOW);\n  digitalWrite(LeftDirectPin1, leftSpeed > 0 ? HIGH : LOW);\n  digitalWrite(LeftDirectPin2, leftSpeed < 0 ? HIGH : LOW);\n\n  analogWrite(speedPinR, rightSpeed < 0 ? -rightSpeed : rightSpeed);\n  analogWrite(speedPinL, leftSpeed < 0 ? -leftSpeed : leftSpeed);\n\n  appliedRight = rightSpeed;\n  appliedLeft = leftSpeed;\n}\n\nvoid go_Advance() {\n  setMotors(DriveSpeed, DriveSpeed);\n}\n\nvoid go_Back() {\n  setMotors(-DriveSpeed, -DriveSpeed);\n}\n\nvoid go_Right() {\n  setMotors(-DriveSpeed, DriveSpeed);\n}\n\nvoid go_Left() {\n  setMotors(DriveSpeed, -DriveSpeed);\n}\n\nvoid stop_Stop() {\n  analogWrite(speedPinR, 0);\n  analogWrite(speedPinL, 0);\n\n  digitalWrite(RightDirectPin1, LOW);\n  digitalWrite(RightDirectPin2, LOW);\n  digitalWrite(LeftDirectPin1, LOW);\n  digitalWrite(LeftDirectPin2, LOW);\n\n  appliedRight = 0;\n  appliedLeft = 0;\n}\n\nvoid resetToStop() {\n  Remote_Num = STOP_STOP;\n  Drive_Num = STOP_STOP;\n  DriveSpeed = 0;\n  avoidMode = AVOID_NONE;\n  holdActive = false;\n}\n\n// ============================================================================\n// 6. 長押しリモコン操作\n// ============================================================================\n// 赤外線リモコンは「離した」という信号を送らないため、受信間隔で判断する。\nvoid updateRemoteHold() {\n  if (!holdActive) {\n    return;\n  }\n\n  const uint32_t elapsed = uint32_t(millis() - lastRemoteAt);\n  if (elapsed >= HOLD_TIMEOUT_MS) {\n    resetToStop();\n  }\n}\n\nDN decodeRemoteDirection(uint16_t command) {\n  switch (command) {\n    case IR_ADVANCE: return GO_ADVANCE;\n    case IR_BACK:    return GO_BACK;\n    case IR_RIGHT:   return GO_RIGHT;\n    case IR_LEFT:    return GO_LEFT;\n    default:         return STOP_STOP;\n  }\n}\n\nbool isSameRemote(uint16_t address, decode_type_t protocol) {\n  // NECの長押しがNEC2として報告される場合も、同じ通信方式として扱う。\n  const bool currentIsNEC = protocol == NEC || protocol == NEC2;\n  const bool previousIsNEC = lastRemoteProtocol == NEC || lastRemoteProtocol == NEC2;\n  const bool sameProtocol = protocol == lastRemoteProtocol ||\n                            (currentIsNEC && previousIsNEC);\n  return address == lastRemoteAddress && sameProtocol;\n}\n\nvoid do_IR_Tick() {\n  // 古いリピート信号で停止状態を復活させないよう、受信より先に期限を見る。\n  updateRemoteHold();\n  if (!IrReceiver.decode()) {\n    return;\n  }\n\n  const uint8_t flags = IrReceiver.decodedIRData.flags;\n  const uint16_t command = IrReceiver.decodedIRData.command;\n  const uint16_t address = IrReceiver.decodedIRData.address;\n  const decode_type_t protocol = IrReceiver.decodedIRData.protocol;\n  IrReceiver.resume();\n\n  if ((flags & IRDATA_FLAGS_WAS_OVERFLOW) ||\n      (flags & IRDATA_FLAGS_PARITY_FAILED) || protocol == UNKNOWN) {\n    resetToStop();\n    return;\n  }\n\n  if (command == IR_STOP) {\n    resetToStop();\n    return;\n  }\n\n  if (flags & IRDATA_FLAGS_IS_REPEAT) {\n    // 長押し中の同じ方向・同じ送信元・期限内の信号だけを受け付ける。\n    if (holdActive && command == lastRemoteCommand &&\n        isSameRemote(address, protocol)) {\n      lastRemoteAt = millis();\n    }\n    return;\n  }\n\n  const DN requested = decodeRemoteDirection(command);\n  if (requested == STOP_STOP) {\n    return;  // 未使用ボタンでは走行時間を延長しない\n  }\n\n  Remote_Num = requested;\n  holdActive = true;\n  lastRemoteAt = millis();\n  lastRemoteCommand = command;\n  lastRemoteAddress = address;\n  lastRemoteProtocol = protocol;\n}\n\n// ============================================================================\n// 7. センサー読み取り\n// ============================================================================\nfloat watch() {\n  digitalWrite(Trig_PIN, LOW);\n  delayMicroseconds(2);\n  digitalWrite(Trig_PIN, HIGH);\n  delayMicroseconds(10);\n  digitalWrite(Trig_PIN, LOW);\n\n  const unsigned long echoTime = pulseIn(Echo_PIN, HIGH, ECHO_TIMEOUT_US);\n  if (echoTime == 0) {\n    return -1.0f;\n  }\n  return echoTime * 0.01657f;\n}\n\nvoid updateSensors() {\n  const uint32_t now = millis();\n  if (!sensorSampled || uint32_t(now - sensorAt) >= SENSOR_PERIOD_MS) {\n    distanceCm = watch();\n    distanceValid = distanceCm >= 0.0f;\n    sensorAt = now;\n    sensorSampled = true;\n  }\n\n  front = distanceValid && distanceCm <= REVERSE_DISTANCE_CM;\n  back = digitalRead(LFSensor_bl) == REAR_ACTIVE_LEVEL ||\n         digitalRead(LFSensor_br) == REAR_ACTIVE_LEVEL;\n}\n\n// ============================================================================\n// 8. 障害物回避と手動操作の優先順位\n// ============================================================================\nvoid checkSensorsAndObstacles() {\n  updateRemoteHold();\n\n  // ボタンを離した場合、回避中でも停止する。\n  if (!holdActive || Remote_Num == STOP_STOP) {\n    resetToStop();\n    return;\n  }\n\n  if (!distanceValid || (front && back)) {\n    resetToStop();\n    return;\n  }\n\n  const uint32_t now = millis();\n  if (avoidMode != AVOID_NONE && uint32_t(now - avoidStarted) >= AUTO_MAX_MS) {\n    resetToStop();\n    return;\n  }\n\n  // 前方回避中：後方を監視しながら、15cmより離れるまで後退する。\n  if (avoidMode == AVOID_FRONT) {\n    if (back || distanceCm > RELEASE_DISTANCE_CM) {\n      resetToStop();\n      return;\n    }\n    Drive_Num = GO_BACK;\n    DriveSpeed = AVOID_SPEED;\n    return;\n  }\n\n  // 後方回避中：前方を監視しながら、後方検知がなくなるまで前進する。\n  if (avoidMode == AVOID_REAR) {\n    if (front || !back) {\n      resetToStop();\n      return;\n    }\n    Drive_Num = GO_ADVANCE;\n    DriveSpeed = AVOID_SPEED;\n    return;\n  }\n\n  if (front) {\n    avoidMode = AVOID_FRONT;\n    avoidStarted = now;\n    Drive_Num = GO_BACK;\n    DriveSpeed = AVOID_SPEED;\n    return;\n  }\n\n  if (back) {\n    avoidMode = AVOID_REAR;\n    avoidStarted = now;\n    Drive_Num = GO_ADVANCE;\n    DriveSpeed = AVOID_SPEED;\n    return;\n  }\n\n  Drive_Num = Remote_Num;\n  if (Drive_Num == GO_ADVANCE) {\n    DriveSpeed = ADVANCE_SPEED;\n  } else if (Drive_Num == GO_BACK) {\n    DriveSpeed = BACK_SPEED;\n  } else {\n    DriveSpeed = TURN_SPEED;\n  }\n}\n\n// ============================================================================\n// 9. 距離に応じたブザー（delayを使わない）\n// ============================================================================\nuint32_t getBuzzerPeriod(float cm) {\n  if (cm <= REVERSE_DISTANCE_CM) {\n    return BUZZ_FAST_MS;\n  }\n  if (cm >= WARNING_DISTANCE_CM) {\n    return BUZZ_SLOW_MS;\n  }\n\n  const float ratio = (cm - REVERSE_DISTANCE_CM) /\n                      (WARNING_DISTANCE_CM - REVERSE_DISTANCE_CM);\n  return BUZZ_FAST_MS + uint32_t(ratio * (BUZZ_SLOW_MS - BUZZ_FAST_MS));\n}\n\nvoid warning() {\n  const bool alarm = distanceValid && distanceCm <= WARNING_DISTANCE_CM;\n  if (!alarm) {\n    digitalWrite(BUZZ_PIN, BUZZ_ACTIVE_LEVEL == LOW ? HIGH : LOW);\n    buzzerRunning = false;\n    return;\n  }\n\n  const uint32_t now = millis();\n  const uint32_t period = getBuzzerPeriod(distanceCm);\n  if (!buzzerRunning || uint32_t(now - buzzerCycleAt) >= period) {\n    buzzerCycleAt = now;\n    buzzerRunning = true;\n  }\n\n  const bool on = uint32_t(now - buzzerCycleAt) < BUZZ_ON_MS;\n  digitalWrite(BUZZ_PIN, on ? BUZZ_ACTIVE_LEVEL :\n                            (BUZZ_ACTIVE_LEVEL == LOW ? HIGH : LOW));\n}\n\n// ============================================================================\n// 10. モーター実行（逆転前に100ms停止）\n// ============================================================================\nvoid do_Drive_Tick() {\n  if (Drive_Num == STOP_STOP) {\n    stop_Stop();\n    directionWaiting = false;\n    return;\n  }\n\n  int right = 0;\n  int left = 0;\n  switch (Drive_Num) {\n    case GO_ADVANCE: right = DriveSpeed;  left = DriveSpeed;  break;\n    case GO_BACK:    right = -DriveSpeed; left = -DriveSpeed; break;\n    case GO_RIGHT:   right = -DriveSpeed; left = DriveSpeed;  break;\n    case GO_LEFT:    right = DriveSpeed;  left = -DriveSpeed; break;\n    default:        stop_Stop(); return;\n  }\n\n  const uint32_t now = millis();\n  if (directionWaiting) {\n    if (uint32_t(now - directionStoppedAt) < DIRECTION_STOP_MS) {\n      return;\n    }\n    directionWaiting = false;\n  }\n\n  const bool reversing = (appliedRight > 0 && right < 0) ||\n                         (appliedRight < 0 && right > 0) ||\n                         (appliedLeft > 0 && left < 0) ||\n                         (appliedLeft < 0 && left > 0);\n  if (reversing) {\n    stop_Stop();\n    directionWaiting = true;\n    directionStoppedAt = now;\n    return;\n  }\n\n  switch (Drive_Num) {\n    case GO_ADVANCE: go_Advance(); break;\n    case GO_BACK:    go_Back();    break;\n    case GO_RIGHT:   go_Right();   break;\n    case GO_LEFT:    go_Left();    break;\n    default:        stop_Stop();  break;\n  }\n}\n\n// ============================================================================\n// 11. 初期化とメイン処理\n// ============================================================================\nvoid setup() {\n  const uint8_t outputs[] = {\n    speedPinR, RightDirectPin1, RightDirectPin2,\n    speedPinL, LeftDirectPin1, LeftDirectPin2, BUZZ_PIN, Trig_PIN\n  };\n  for (uint8_t pin : outputs) {\n    pinMode(pin, OUTPUT);\n  }\n\n  stop_Stop();\n  resetToStop();\n  digitalWrite(BUZZ_PIN, BUZZ_ACTIVE_LEVEL == LOW ? HIGH : LOW);\n  digitalWrite(Trig_PIN, LOW);\n  pinMode(LFSensor_bl, INPUT);\n  pinMode(LFSensor_br, INPUT);\n  pinMode(Echo_PIN, INPUT);\n\n  headServo.attach(SERVO_PIN);\n  headServo.write(90);\n  delay(400);  // 起動時だけ正面合わせ。モーターは停止中。\n  IrReceiver.begin(IR_RECEIVE_PIN, DISABLE_LED_FEEDBACK);\n}\n\nvoid loop() {\n  do_IR_Tick();                 // 1. 長押し信号と停止ボタン\n  updateSensors();              // 2. 前方距離・後方障害物\n  do_IR_Tick();                 // 3. 測距中に届いた信号も反映\n  checkSensorsAndObstacles();   // 4. 停止 → 回避 → 手動操作\n  warning();                   // 5. 距離に応じた警告音\n  do_Drive_Tick();              // 6. モーターへ出力\n}\n",
-      "content": "方向は長押し中だけ有効。最終受信から250ms以上途切れたら回避中も停止。前方15cm以内でブザー、5cm以下で後退、後方検知で前進。OK優先・前後同時停止。#defineで設定、独自ヘッダー不要。旧FlowchartRobotの5cm停止とは動作が異なる。",
+      "code": "/*\n * OSOYOO Robot Car / Arduino UNO / Model X\n *\n * code.txtのピン番号・ボタン値・基本動作関数をそのまま使用。\n * 【操作】方向ボタンを長押ししている間だけ走行。離すと停止。\n * 【前方】15cm以内で警告音。近づくほど速く鳴り、5cm以下で後退。\n * 【後方】障害物を検知したら前進。\n * 【停止】OK、長押し終了、センサー異常、前後同時検知を優先。\n *\n * 独自ヘッダー不要の1ファイル版。実機走行は未検証。\n */\n#include <Arduino.h>\n\n// ============================================================================\n// 1. ライブラリ\n// ============================================================================\n#define IR_USE_AVR_TIMER2\n#include <IRremote.hpp>  // Arduino-IRremote 4.4.1\n\n// ============================================================================\n// 2. ピン設定\n// ============================================================================\n// code.txtと同じピン番号。配線の変更は不要。\n// サーボはソフトウェアのパルス出力にし、D9のPWMタイマーを専有しない。\n#define IR_RECEIVE_PIN      4\n#define speedPinR           9\n#define RightDirectPin1    12\n#define RightDirectPin2    11\n#define speedPinL           6\n#define LeftDirectPin1      7\n#define LeftDirectPin2      8\n#define BUZZ_PIN           13\n#define LFSensor_bl         0  // D0を使うためSerialは使用しない\n#define LFSensor_br         2\n#define Echo_PIN            3\n#define Trig_PIN           10\n#define SERVO_PIN           5\n#define REAR_ACTIVE_LEVEL LOW\n#define BUZZ_ACTIVE_LEVEL LOW\n\n// ============================================================================\n// 3. リモコン・距離・速度・時間の設定\n// ============================================================================\n#define IR_ADVANCE         24\n#define IR_BACK            82\n#define IR_RIGHT           90\n#define IR_LEFT             8\n#define IR_STOP            28\n\n#define WARNING_DISTANCE_CM 15.0f\n#define REVERSE_DISTANCE_CM  5.0f\n#define RELEASE_DISTANCE_CM 15.0f\n\n// PWMは0〜255。実機で動き出す速度と方向を確認して調整する。\n#define ADVANCE_SPEED     128\n#define BACK_SPEED         77\n#define TURN_SPEED         77\n#define AVOID_SPEED        80\n\n#define HOLD_TIMEOUT_MS    250UL  // 最終受信からこの時間途切れたら停止\n#define SENSOR_PERIOD_MS    60UL\n#define ECHO_TIMEOUT_US  15000UL  // この値だけ単位はμs\n#define DIRECTION_STOP_MS  100UL\n#define AUTO_MAX_MS       3000UL\n#define BUZZ_SLOW_MS       600UL\n#define BUZZ_FAST_MS       100UL\n#define BUZZ_ON_MS          35UL\n\n#define SERVO_CENTER_US   1500UL  // 正面付近。実機に合わせて微調整\n#define SERVO_PERIOD_US  20000UL  // 目標周期20ms（他処理により延びる）\n\n// 設定ミスをコンパイル時に検出する。\nstatic_assert(speedPinR == 9 && speedPinL == 6 && SERVO_PIN == 5,\n              \"Keep the original code.txt motor and servo pins\");\nstatic_assert(SERVO_CENTER_US >= 500 && SERVO_CENTER_US <= 2500 &&\n              SERVO_PERIOD_US > SERVO_CENTER_US, \"Invalid servo pulse setting\");\nstatic_assert(Echo_PIN != LFSensor_bl && Echo_PIN != LFSensor_br,\n              \"Echo and rear sensor pins must be different\");\nstatic_assert(REVERSE_DISTANCE_CM > 0 &&\n              WARNING_DISTANCE_CM > REVERSE_DISTANCE_CM &&\n              RELEASE_DISTANCE_CM >= WARNING_DISTANCE_CM,\n              \"Invalid distance thresholds\");\nstatic_assert(BUZZ_ON_MS < BUZZ_FAST_MS && BUZZ_FAST_MS <= BUZZ_SLOW_MS,\n              \"Invalid buzzer timing\");\nstatic_assert(HOLD_TIMEOUT_MS > 0 && HOLD_TIMEOUT_MS < 0x80000000UL,\n              \"Invalid hold timeout\");\nstatic_assert(ADVANCE_SPEED >= 0 && ADVANCE_SPEED <= 255 &&\n              BACK_SPEED >= 0 && BACK_SPEED <= 255 &&\n              TURN_SPEED >= 0 && TURN_SPEED <= 255 &&\n              AVOID_SPEED >= 0 && AVOID_SPEED <= 255,\n              \"PWM speed must be 0..255\");\n\n// ============================================================================\n// 4. 車両の状態\n// ============================================================================\nenum DN {\n  GO_ADVANCE,\n  GO_BACK,\n  GO_RIGHT,\n  GO_LEFT,\n  STOP_STOP\n};\n\nenum AvoidMode {\n  AVOID_NONE,\n  AVOID_FRONT,\n  AVOID_REAR\n};\n\nDN Remote_Num = STOP_STOP;       // リモコンからの指令\nDN Drive_Num = STOP_STOP;        // 最終的に実行する動作\nAvoidMode avoidMode = AVOID_NONE;\nint DriveSpeed = 0;\n\n// センサーの状態\nfloat distanceCm = -1.0f;\nbool distanceValid = false;\nbool sensorSampled = false;\nint front = 0;\nint back = 0;\nuint32_t sensorAt = 0;\nuint32_t avoidStarted = 0;\n\n// 長押しの状態。同じリモコンの有効な繰り返し信号だけで延長する。\nbool holdActive = false;\nuint32_t lastRemoteAt = 0;\nuint16_t lastRemoteCommand = 0;\nuint16_t lastRemoteAddress = 0;\ndecode_type_t lastRemoteProtocol = UNKNOWN;\n\n// サーボのソフトウェアパルス（Timer1を使用しない）\nbool servoStarted = false;\nuint32_t lastServoAt = 0;\n\n// ブザーとモーター切り替えの状態\nbool buzzerRunning = false;\nuint32_t buzzerCycleAt = 0;\nint appliedRight = 0;\nint appliedLeft = 0;\nbool directionWaiting = false;\nuint32_t directionStoppedAt = 0;\n\n// ============================================================================\n// 5. モーターの基本操作\n// ============================================================================\nvoid setMotors(int rightSpeed, int leftSpeed) {\n  digitalWrite(RightDirectPin1, rightSpeed > 0 ? HIGH : LOW);\n  digitalWrite(RightDirectPin2, rightSpeed < 0 ? HIGH : LOW);\n  digitalWrite(LeftDirectPin1, leftSpeed > 0 ? HIGH : LOW);\n  digitalWrite(LeftDirectPin2, leftSpeed < 0 ? HIGH : LOW);\n\n  analogWrite(speedPinR, rightSpeed < 0 ? -rightSpeed : rightSpeed);\n  analogWrite(speedPinL, leftSpeed < 0 ? -leftSpeed : leftSpeed);\n\n  appliedRight = rightSpeed;\n  appliedLeft = leftSpeed;\n}\n\nvoid go_Advance() {\n  setMotors(DriveSpeed, DriveSpeed);\n}\n\nvoid go_Back() {\n  setMotors(-DriveSpeed, -DriveSpeed);\n}\n\nvoid go_Right() {\n  setMotors(-DriveSpeed, DriveSpeed);\n}\n\nvoid go_Left() {\n  setMotors(DriveSpeed, -DriveSpeed);\n}\n\nvoid stop_Stop() {\n  analogWrite(speedPinR, 0);\n  analogWrite(speedPinL, 0);\n\n  digitalWrite(RightDirectPin1, LOW);\n  digitalWrite(RightDirectPin2, LOW);\n  digitalWrite(LeftDirectPin1, LOW);\n  digitalWrite(LeftDirectPin2, LOW);\n\n  appliedRight = 0;\n  appliedLeft = 0;\n}\n\nvoid resetToStop() {\n  Remote_Num = STOP_STOP;\n  Drive_Num = STOP_STOP;\n  DriveSpeed = 0;\n  avoidMode = AVOID_NONE;\n  holdActive = false;\n}\n\n// ============================================================================\n// 6. 長押しリモコン操作\n// ============================================================================\n// 赤外線リモコンは「離した」という信号を送らないため、受信間隔で判断する。\nvoid updateRemoteHold() {\n  if (!holdActive) {\n    return;\n  }\n\n  const uint32_t elapsed = uint32_t(millis() - lastRemoteAt);\n  if (elapsed >= HOLD_TIMEOUT_MS) {\n    resetToStop();\n  }\n}\n\nDN decodeRemoteDirection(uint16_t command) {\n  switch (command) {\n    case IR_ADVANCE: return GO_ADVANCE;\n    case IR_BACK:    return GO_BACK;\n    case IR_RIGHT:   return GO_RIGHT;\n    case IR_LEFT:    return GO_LEFT;\n    default:         return STOP_STOP;\n  }\n}\n\nbool isSameRemote(uint16_t address, decode_type_t protocol) {\n  // NECの長押しがNEC2として報告される場合も、同じ通信方式として扱う。\n  const bool currentIsNEC = protocol == NEC || protocol == NEC2;\n  const bool previousIsNEC = lastRemoteProtocol == NEC || lastRemoteProtocol == NEC2;\n  const bool sameProtocol = protocol == lastRemoteProtocol ||\n                            (currentIsNEC && previousIsNEC);\n  return address == lastRemoteAddress && sameProtocol;\n}\n\nvoid do_IR_Tick() {\n  // 古いリピート信号で停止状態を復活させないよう、受信より先に期限を見る。\n  updateRemoteHold();\n  if (!IrReceiver.decode()) {\n    return;\n  }\n\n  const uint8_t flags = IrReceiver.decodedIRData.flags;\n  const uint16_t command = IrReceiver.decodedIRData.command;\n  const uint16_t address = IrReceiver.decodedIRData.address;\n  const decode_type_t protocol = IrReceiver.decodedIRData.protocol;\n  IrReceiver.resume();\n\n  if ((flags & IRDATA_FLAGS_WAS_OVERFLOW) ||\n      (flags & IRDATA_FLAGS_PARITY_FAILED) || protocol == UNKNOWN) {\n    resetToStop();\n    return;\n  }\n\n  if (command == IR_STOP) {\n    resetToStop();\n    return;\n  }\n\n  if (flags & IRDATA_FLAGS_IS_REPEAT) {\n    // 長押し中の同じ方向・同じ送信元・期限内の信号だけを受け付ける。\n    if (holdActive && command == lastRemoteCommand &&\n        isSameRemote(address, protocol)) {\n      lastRemoteAt = millis();\n    }\n    return;\n  }\n\n  const DN requested = decodeRemoteDirection(command);\n  if (requested == STOP_STOP) {\n    return;  // 未使用ボタンでは走行時間を延長しない\n  }\n\n  Remote_Num = requested;\n  holdActive = true;\n  lastRemoteAt = millis();\n  lastRemoteCommand = command;\n  lastRemoteAddress = address;\n  lastRemoteProtocol = protocol;\n}\n\n// D5へ正面保持用のパルスを出す。割り込みは止めないためIR受信を継続できる。\n// 約1.5msだけ待機する。microsで経過時間を測り、割り込みの累積遅延を抑える。\nvoid keepHeadForward() {\n  const uint32_t now = micros();\n  if (servoStarted && uint32_t(now - lastServoAt) < SERVO_PERIOD_US) {\n    return;\n  }\n\n  servoStarted = true;\n  lastServoAt = now;\n  digitalWrite(SERVO_PIN, HIGH);\n\n  const uint32_t pulseStarted = micros();\n  while (uint32_t(micros() - pulseStarted) < SERVO_CENTER_US) {\n    // IRremoteとArduinoの時刻管理の割り込みは有効なまま。\n  }\n  digitalWrite(SERVO_PIN, LOW);\n}\n\n// ============================================================================\n// 7. センサー読み取り\n// ============================================================================\nfloat watch() {\n  digitalWrite(Trig_PIN, LOW);\n  delayMicroseconds(2);\n  digitalWrite(Trig_PIN, HIGH);\n  delayMicroseconds(10);\n  digitalWrite(Trig_PIN, LOW);\n\n  const unsigned long echoTime = pulseIn(Echo_PIN, HIGH, ECHO_TIMEOUT_US);\n  if (echoTime == 0) {\n    return -1.0f;\n  }\n  return echoTime * 0.01657f;\n}\n\nvoid updateSensors() {\n  const uint32_t now = millis();\n  if (!sensorSampled || uint32_t(now - sensorAt) >= SENSOR_PERIOD_MS) {\n    distanceCm = watch();\n    distanceValid = distanceCm >= 0.0f;\n    sensorAt = now;\n    sensorSampled = true;\n  }\n\n  front = distanceValid && distanceCm <= REVERSE_DISTANCE_CM;\n  back = digitalRead(LFSensor_bl) == REAR_ACTIVE_LEVEL ||\n         digitalRead(LFSensor_br) == REAR_ACTIVE_LEVEL;\n}\n\n// ============================================================================\n// 8. 障害物回避と手動操作の優先順位\n// ============================================================================\nvoid checkSensorsAndObstacles() {\n  updateRemoteHold();\n\n  // ボタンを離した場合、回避中でも停止する。\n  if (!holdActive || Remote_Num == STOP_STOP) {\n    resetToStop();\n    return;\n  }\n\n  if (!distanceValid || (front && back)) {\n    resetToStop();\n    return;\n  }\n\n  const uint32_t now = millis();\n  if (avoidMode != AVOID_NONE && uint32_t(now - avoidStarted) >= AUTO_MAX_MS) {\n    resetToStop();\n    return;\n  }\n\n  // 前方回避中：後方を監視しながら、15cmより離れるまで後退する。\n  if (avoidMode == AVOID_FRONT) {\n    if (back || distanceCm > RELEASE_DISTANCE_CM) {\n      resetToStop();\n      return;\n    }\n    Drive_Num = GO_BACK;\n    DriveSpeed = AVOID_SPEED;\n    return;\n  }\n\n  // 後方回避中：前方を監視しながら、後方検知がなくなるまで前進する。\n  if (avoidMode == AVOID_REAR) {\n    if (front || !back) {\n      resetToStop();\n      return;\n    }\n    Drive_Num = GO_ADVANCE;\n    DriveSpeed = AVOID_SPEED;\n    return;\n  }\n\n  if (front) {\n    avoidMode = AVOID_FRONT;\n    avoidStarted = now;\n    Drive_Num = GO_BACK;\n    DriveSpeed = AVOID_SPEED;\n    return;\n  }\n\n  if (back) {\n    avoidMode = AVOID_REAR;\n    avoidStarted = now;\n    Drive_Num = GO_ADVANCE;\n    DriveSpeed = AVOID_SPEED;\n    return;\n  }\n\n  Drive_Num = Remote_Num;\n  if (Drive_Num == GO_ADVANCE) {\n    DriveSpeed = ADVANCE_SPEED;\n  } else if (Drive_Num == GO_BACK) {\n    DriveSpeed = BACK_SPEED;\n  } else {\n    DriveSpeed = TURN_SPEED;\n  }\n}\n\n// ============================================================================\n// 9. 距離に応じたブザー（delayを使わない）\n// ============================================================================\nuint32_t getBuzzerPeriod(float cm) {\n  if (cm <= REVERSE_DISTANCE_CM) {\n    return BUZZ_FAST_MS;\n  }\n  if (cm >= WARNING_DISTANCE_CM) {\n    return BUZZ_SLOW_MS;\n  }\n\n  const float ratio = (cm - REVERSE_DISTANCE_CM) /\n                      (WARNING_DISTANCE_CM - REVERSE_DISTANCE_CM);\n  return BUZZ_FAST_MS + uint32_t(ratio * (BUZZ_SLOW_MS - BUZZ_FAST_MS));\n}\n\nvoid warning() {\n  const bool alarm = distanceValid && distanceCm <= WARNING_DISTANCE_CM;\n  if (!alarm) {\n    digitalWrite(BUZZ_PIN, BUZZ_ACTIVE_LEVEL == LOW ? HIGH : LOW);\n    buzzerRunning = false;\n    return;\n  }\n\n  const uint32_t now = millis();\n  const uint32_t period = getBuzzerPeriod(distanceCm);\n  if (!buzzerRunning || uint32_t(now - buzzerCycleAt) >= period) {\n    buzzerCycleAt = now;\n    buzzerRunning = true;\n  }\n\n  const bool on = uint32_t(now - buzzerCycleAt) < BUZZ_ON_MS;\n  digitalWrite(BUZZ_PIN, on ? BUZZ_ACTIVE_LEVEL :\n                            (BUZZ_ACTIVE_LEVEL == LOW ? HIGH : LOW));\n}\n\n// ============================================================================\n// 10. モーター実行（逆転前に100ms停止）\n// ============================================================================\nvoid do_Drive_Tick() {\n  if (Drive_Num == STOP_STOP) {\n    stop_Stop();\n    directionWaiting = false;\n    return;\n  }\n\n  int right = 0;\n  int left = 0;\n  switch (Drive_Num) {\n    case GO_ADVANCE: right = DriveSpeed;  left = DriveSpeed;  break;\n    case GO_BACK:    right = -DriveSpeed; left = -DriveSpeed; break;\n    case GO_RIGHT:   right = -DriveSpeed; left = DriveSpeed;  break;\n    case GO_LEFT:    right = DriveSpeed;  left = -DriveSpeed; break;\n    default:        stop_Stop(); return;\n  }\n\n  const uint32_t now = millis();\n  if (directionWaiting) {\n    if (uint32_t(now - directionStoppedAt) < DIRECTION_STOP_MS) {\n      return;\n    }\n    directionWaiting = false;\n  }\n\n  const bool reversing = (appliedRight > 0 && right < 0) ||\n                         (appliedRight < 0 && right > 0) ||\n                         (appliedLeft > 0 && left < 0) ||\n                         (appliedLeft < 0 && left > 0);\n  if (reversing) {\n    stop_Stop();\n    directionWaiting = true;\n    directionStoppedAt = now;\n    return;\n  }\n\n  switch (Drive_Num) {\n    case GO_ADVANCE: go_Advance(); break;\n    case GO_BACK:    go_Back();    break;\n    case GO_RIGHT:   go_Right();   break;\n    case GO_LEFT:    go_Left();    break;\n    default:        stop_Stop();  break;\n  }\n}\n\n// ============================================================================\n// 11. 初期化とメイン処理\n// ============================================================================\nvoid setup() {\n  const uint8_t outputs[] = {\n    speedPinR, RightDirectPin1, RightDirectPin2,\n    speedPinL, LeftDirectPin1, LeftDirectPin2, BUZZ_PIN, Trig_PIN, SERVO_PIN\n  };\n  for (uint8_t pin : outputs) {\n    pinMode(pin, OUTPUT);\n  }\n\n  stop_Stop();\n  resetToStop();\n  digitalWrite(BUZZ_PIN, BUZZ_ACTIVE_LEVEL == LOW ? HIGH : LOW);\n  digitalWrite(Trig_PIN, LOW);\n  pinMode(LFSensor_bl, INPUT);\n  pinMode(LFSensor_br, INPUT);\n  pinMode(Echo_PIN, INPUT);\n\n  digitalWrite(SERVO_PIN, LOW);\n  const uint32_t centerStarted = millis();\n  while (uint32_t(millis() - centerStarted) < 400UL) {\n    keepHeadForward();  // 起動時の正面合わせ。モーターは停止中。\n  }\n  IrReceiver.begin(IR_RECEIVE_PIN, DISABLE_LED_FEEDBACK);\n}\n\nvoid loop() {\n  do_IR_Tick();                 // 1. 長押し信号と停止ボタン\n  keepHeadForward();            // 2. 元のD5でサーボを正面保持\n  updateSensors();              // 3. 前方距離・後方障害物\n  do_IR_Tick();                 // 4. 測距中に届いた信号も反映\n  checkSensorsAndObstacles();   // 5. 停止 → 回避 → 手動操作\n  warning();                   // 6. 距離に応じた警告音\n  do_Drive_Tick();              // 7. モーターへ出力\n}\n",
+      "content": "code.txtと全13本のピン・5つのボタン値が一致。方向は長押し中だけ有効。最終受信から250ms以上途切れたら回避中も停止。前方15cm以内でブザー、5cm以下で後退、後方検知で前進。OK優先・前後同時停止。#defineで設定、独自ヘッダー不要。旧FlowchartRobotの5cm停止とは動作が異なる。",
       "status": "実機未検証",
-      "pins": "ENA D5 / ENB D6 / Servo D9 / Echo D3 / Trig D10 / IR受信 D4 / ブザー D13 / 後方 D0,D2",
-      "libraries": "IRremote 4.4.1 / Servo 1.2.2 / Arduino Uno"
+      "pins": "ENA D9 / ENB D6 / Servo D5 / Echo D3 / Trig D10 / IR受信 D4 / ブザー D13 / 後方 D0,D2",
+      "libraries": "IRremote 4.4.1のみ / Arduino Uno / ソフトウェア正面保持"
     },
     {
       "id": "LATEST-SPEC",
       "kind": "basic",
       "title": "今回の仕様：15cmで警告・5cmで後退・後方検知で前進",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "category": "今回の仕様",
-      "content": "# 今回の仕様版：RemoteObstacleCar（define宣言・1ファイル）\n\n**長押し中のみ走行し、前方15cm以内で段階的な警告、5cm以下で強制後退、後方検知で前進する版です。** 前のFlowchartRobotは5cm以下で停止する参考版でした。今回使うのは`RemoteObstacleCar.ino`です。\n\n`code.txt`と同じように、ピン・リモコン値・距離・PWM速度・時間を先頭の`#define`へまとめました。この`.ino`だけで使え、独自のヘッダーファイルは不要です。外部ライブラリのIRremoteとServoは必要です。\n\n## 動作\n\n|入力・条件|動作|\n|---|---|\n|上（24）|前進|\n|下（82）|後退|\n|右（90）|右旋回|\n|左（8）|左旋回|\n|OK（28）|停止。自動回避中でも優先|\n|前方15cmより遠い|ブザー停止、通常のリモコン操作|\n|前方5cm超〜15cm以内|距離に応じてブザー。方向はリモコン操作を保持|\n|前方5cm以下・後方に障害物なし|リモコンの方向を上書きして強制後退|\n|後方検知・前方5cm超|リモコンの方向を上書きして前進|\n|前方5cm以下・後方も検知|前後がふさがっているため停止|\n|超音波無応答|停止。安全な距離として扱わない|\n\n## 長押し操作\n\n方向ボタンを押している間だけ走行し、離すと停止します。リモコンには通常、ボタンを離したことを知らせる信号がないため、長押し中の繰り返し受信を監視します。\n\n- 同じ方向・同じ送信元の有効な繰り返し信号で走行を継続します。\n- 最後の有効な信号から`HOLD_TIMEOUT_MS=250`ms以上途切れたら停止します。離した瞬間の停止ではなく、最終受信から約0.25秒とループ処理時間を含む遅延があります。\n- 自動後退・自動前進中も、長押しをやめたら停止します。\n- OKは受信したら停止指令にします。\n- 停止後は古いリピート信号だけでは走り出しません。方向ボタンを離して、押し直します。\n- 知らないキー、違う送信元・方向のリピートでは期限を延長しません。受信オーバーフロー・パリティ異常・未知の通信方式は停止にします。\n- NEC/NEC2の長押し信号を同じ通信方式として受け付けます。実物のリモコンが長押し中に繰り返し信号を送るかは、実機確認が必要です。\n\n長押し中に止まってしまう場合は、実機の受信間隔や受信状態を確認してから`HOLD_TIMEOUT_MS`を調整します。長くすると、ボタンを離してから止まるまでの時間も長くなります。\n\n\n起動直後・OK停止中は、障害物があっても自動で走り出しません。距離によるブザーは停止中も鳴ります。方向ボタンの長押しが有効な間は、手動の後退・旋回中でも、前方5cm以下なら後退、後方検知なら前進を優先します。\n\n## ブザーの鳴らし方\n\n|前方距離|1回の周期|ON時間|OFF時間|\n|---|---:|---:|---:|\n|15cm|600ms|35ms|565ms|\n|10cm|350ms|35ms|315ms|\n|5cm以下|100ms|35ms|65ms|\n\n5〜15cmの間は距離に比例して周期を短くします。15cmより遠ければ鳴りません。`delay()`を使わず、`millis()`で鳴動を管理するため、ブザーの待ち時間でリモコンとモーター制御を止めません。LOWで鳴るアクティブブザーを想定しています。\n\n## 回避後の動作\n\n- 前方による強制後退は、前方が15cmより離れたら停止します。\n- 後方による自動前進は、後方検知がなくなったら停止します。\n- 自動回避中にOKを押すと停止します。\n- 回避は最大3秒で打ち切って停止します。異常時に走り続けないための初期値です。\n- 回避完了・異常・打ち切り後は、古いリモコン指令を解除します。方向キーをいったん離して押し直すと操作できます。\n- 回転方向が変わるモーターは、一度PWMを0にして100ms後に新しい方向へ出力します。\n\n回避の終了条件・最大時間・方向切替時間・速度は、今回の説明に数値指定がなかったため追加した設定です。先頭の`#define`から変更できます。\n\n## ピン設定\n\n|機能|使用ピン|元のcode.txtからの変更|\n|---|---|---|\n|IR受信|D4|同じ|\n|右ENA / 速度|D5|**D9からD5へ信号線を移す**|\n|右IN1 / IN2|D12 / D11|同じ|\n|左ENB / 速度|D6|同じ|\n|左IN3 / IN4|D7 / D8|同じ|\n|ブザー信号|D13|同じ|\n|後方赤外線 左 / 右|D0 / D2|同じ|\n|超音波 Echo / Trig|D3 / D10|同じ|\n|サーボ信号|D9|**D5からD9へ信号線を移す**|\n\n**前の版と同じ変更済み配線を使用します。** UNOでServoライブラリがTimer1を使用するため、元のD9をモーターPWMとして使えません。IRremoteのTimer2とも競合しないD5/D6を速度制御に使用します。Servoは信号D9で正面90度を維持します。\n\n`配線.jpg`のEcho=D2を使うと、今回の右後方D2と重複します。ここでは元の`code.txt`に合わせ、Echo=D3を採用しています。異なる配線図を重ねて接続しないでください。\n\n6.jpgのリモコン受信信号はD10、配線.jpgの超音波TrigもD10です。両画像は別々の接続例なので、そのまま同時には使えません。統合コードはIR受信をD4に変更して使用しています。\n\nD0はUSBシリアルのRXと共用なので、本プログラムではSerialを使用しません。書き込みに失敗する場合は電源を切ってD0の後方センサー信号線を外し、書き込み後に再接続します。D0を避ける場合は、実配線と`#define LFSensor_bl`を両方A5などの空きピンへ変更します。\n\n後方は左右どちらかの入力がLOWなら障害物ありとします。5チャンネル追跡センサーの資料だけでは、後方障害物センサーとして使えるかは確定できません。取り付けと極性は実物で確認してください。\n\n電源の資料ではブザーVCCは3.3V、超音波とIR受信は5V、サーボはModel X側の5Vです。実物の表記も確認し、GNDを共通にします。\n\n## 速度の初期値\n\n`ADVANCE_SPEED=128`、`BACK_SPEED=77`、`TURN_SPEED=77`、`AVOID_SPEED=80`です（0〜255のPWM）。前進約50%、後退・旋回約30%、回避約31%の初期値であり、実測した車速ではありません。車輪を浮かせて方向と停止を確認し、回避速度で確実に動き出すか確認してから調整してください。\n\n## Arduino IDEで開く\n\n`RemoteObstacleCar.ino`を開き、ボードをArduino Unoにします。IRremote 4.4.1、Servo 1.2.2でビルドを確認する構成です。ZIPでは同名のRemoteObstacleCarフォルダへ配置しています。独自ヘッダーの追加は不要です。\n\n## 検証の範囲\n\n本番の`.ino`を模擬I/Oで直接実行し、15cm/5cmの境界、強制後退、後方からの前進、ブザー周期、STOP、前後同時、方向切替停止、超音波失敗、長押し継続・解除、期限境界、古いリピートの拒否、送信元照合、回避中の長押し解除、回避上限、時計の折り返しをテストしています。UNOビルド結果は同梱BUILD_CHECK.mdに記録します。\n\n実機走行・配線・検知距離・センサー極性・ブレーキ距離は未確認です。超音波は60ms周期で読み、`pulseIn()`は最大15ms待機するため、検知・停止には遅延があります。5cmでの物理的な衝突防止を保証する値ではありません。\n\n## 読みやすさの改善\n\n設定・状態・モーター操作・長押し受信・センサー・回避・ブザー・初期化の順に分け、行間と字下げを統一しました。コード表示ページには色分けと行番号を追加しています。コピー時に行番号は入りません。\n",
+      "content": "# code.txtと同じピン：RemoteObstacleCar（長押し・define版）\n\n**元のcode.txtとピン番号をすべて一致させ、長押し中のみ走行し、前方15cm以内で段階的な警告、5cm以下で強制後退、後方検知で前進する版です。** 前のFlowchartRobotは5cm以下で停止する参考版でした。今回使うのは`RemoteObstacleCar.ino`です。\n\n`code.txt`と同じように、ピン・リモコン値・距離・PWM速度・時間を先頭の`#define`へまとめました。この`.ino`だけで使え、独自のヘッダーファイルは不要です。外部ライブラリはIRremoteのみ必要です。Servoライブラリは使用しません。\n\n## 動作\n\n|入力・条件|動作|\n|---|---|\n|上（24）|前進|\n|下（82）|後退|\n|右（90）|右旋回|\n|左（8）|左旋回|\n|OK（28）|停止。自動回避中でも優先|\n|前方15cmより遠い|ブザー停止、通常のリモコン操作|\n|前方5cm超〜15cm以内|距離に応じてブザー。方向はリモコン操作を保持|\n|前方5cm以下・後方に障害物なし|リモコンの方向を上書きして強制後退|\n|後方検知・前方5cm超|リモコンの方向を上書きして前進|\n|前方5cm以下・後方も検知|前後がふさがっているため停止|\n|超音波無応答|停止。安全な距離として扱わない|\n\n## 長押し操作\n\n方向ボタンを押している間だけ走行し、離すと停止します。リモコンには通常、ボタンを離したことを知らせる信号がないため、長押し中の繰り返し受信を監視します。\n\n- 同じ方向・同じ送信元の有効な繰り返し信号で走行を継続します。\n- 最後の有効な信号から`HOLD_TIMEOUT_MS=250`ms以上途切れたら停止します。離した瞬間の停止ではなく、最終受信から約0.25秒とループ処理時間を含む遅延があります。\n- 自動後退・自動前進中も、長押しをやめたら停止します。\n- OKは受信したら停止指令にします。\n- 停止後は古いリピート信号だけでは走り出しません。方向ボタンを離して、押し直します。\n- 知らないキー、違う送信元・方向のリピートでは期限を延長しません。受信オーバーフロー・パリティ異常・未知の通信方式は停止にします。\n- NEC/NEC2の長押し信号を同じ通信方式として受け付けます。実物のリモコンが長押し中に繰り返し信号を送るかは、実機確認が必要です。\n\n長押し中に止まってしまう場合は、実機の受信間隔や受信状態を確認してから`HOLD_TIMEOUT_MS`を調整します。長くすると、ボタンを離してから止まるまでの時間も長くなります。\n\n\n起動直後・OK停止中は、障害物があっても自動で走り出しません。距離によるブザーは停止中も鳴ります。方向ボタンの長押しが有効な間は、手動の後退・旋回中でも、前方5cm以下なら後退、後方検知なら前進を優先します。\n\n## ブザーの鳴らし方\n\n|前方距離|1回の周期|ON時間|OFF時間|\n|---|---:|---:|---:|\n|15cm|600ms|35ms|565ms|\n|10cm|350ms|35ms|315ms|\n|5cm以下|100ms|35ms|65ms|\n\n5〜15cmの間は距離に比例して周期を短くします。15cmより遠ければ鳴りません。`delay()`を使わず、`millis()`で鳴動を管理するため、ブザーの待ち時間でリモコンとモーター制御を止めません。LOWで鳴るアクティブブザーを想定しています。\n\n## 回避後の動作\n\n- 前方による強制後退は、前方が15cmより離れたら停止します。\n- 後方による自動前進は、後方検知がなくなったら停止します。\n- 自動回避中にOKを押すと停止します。\n- 回避は最大3秒で打ち切って停止します。異常時に走り続けないための初期値です。\n- 回避完了・異常・打ち切り後は、古いリモコン指令を解除します。方向キーをいったん離して押し直すと操作できます。\n- 回転方向が変わるモーターは、一度PWMを0にして100ms後に新しい方向へ出力します。\n\n回避の終了条件・最大時間・方向切替時間・速度は、今回の説明に数値指定がなかったため追加した設定です。先頭の`#define`から変更できます。\n\n## ピン設定（code.txtから変更なし）\n\n|機能|使用ピン|code.txtとの比較|\n|---|---|---|\n|IR受信|D4|同じ|\n|右ENA / 速度|D9|同じ|\n|右IN1 / IN2|D12 / D11|同じ|\n|左ENB / 速度|D6|同じ|\n|左IN3 / IN4|D7 / D8|同じ|\n|ブザー信号|D13|同じ|\n|後方赤外線 左 / 右|D0 / D2|同じ|\n|超音波 Echo / Trig|D3 / D10|同じ|\n|サーボ信号|D5|同じ|\n\n全13本のI/Oピンと、リモコンの5つのボタン値を元のcode.txtと照合しています。前の案の「右ENAをD5へ、サーボをD9へ移す」は、今回の版には適用しません。前の案で配線を移していた場合は、元のcode.txtどおりに戻して使用します。\n\n## ピンを変えずにサーボを正面へ向ける方法\n\n通常のServoライブラリはUNOのTimer1を使用し、右モーターD9のPWMと競合します。そのため、この版はServoライブラリを外し、元のサーボ信号D5へソフトウェアで短いパルスを出します。Timer1やPWMの設定レジスターを書き換えないため、右D9・左D6の速度制御を維持できます。\n\n- `SERVO_CENTER_US=1500`：正面付近へ向けるパルス幅の初期値。実物に合わせて微調整します。\n- `SERVO_PERIOD_US=20000`：目標周期20ms。他の処理、特に超音波待機で周期が延びる場合があります。\n- 1回のパルス出力中は約1.5ms待機します。割り込みは止めず、IR受信とArduinoの時刻管理は継続させます。\n- `micros()`で経過時間を監視し、単純な待ち命令に割り込みの遅延が累積することを避けます。それでも割り込み終了待ちやI/O処理によるパルス幅のずれは生じます。\n- 起動時は停止したまま約400ms正面合わせし、その後も正面保持用のパルスを出します。左右を見回すサーボ操作は含めません。\n\nこれは元のピン配置を保つための制御方法の変更です。実物サーボの正面角度・保持・振動は未検証です。超音波センサーが正面を向いているかを確認して使用してください。\n\n画像6.jpgではIR受信D10、配線.jpgではTrig D10ですが、それぞれ別の接続例です。このプログラムは画像を混ぜず、元のcode.txtのIR受信D4・Echo D3・Trig D10を維持します。\n\nD0はUSBシリアルのRXと共用なので、本プログラムではSerialを使用しません。書き込みに失敗する場合は電源を切ってD0の後方センサー信号線を外し、書き込み後に再接続します。D0を避ける場合は、実配線と`#define LFSensor_bl`を両方A5などの空きピンへ変更します。\n\n後方は左右どちらかの入力がLOWなら障害物ありとします。5チャンネル追跡センサーの資料だけでは、後方障害物センサーとして使えるかは確定できません。取り付けと極性は実物で確認してください。\n\n電源の資料ではブザーVCCは3.3V、超音波とIR受信は5V、サーボはModel X側の5Vです。実物の表記も確認し、GNDを共通にします。\n\n## 速度の初期値\n\n`ADVANCE_SPEED=128`、`BACK_SPEED=77`、`TURN_SPEED=77`、`AVOID_SPEED=80`です（0〜255のPWM）。前進約50%、後退・旋回約30%、回避約31%の初期値であり、実測した車速ではありません。車輪を浮かせて方向と停止を確認し、回避速度で確実に動き出すか確認してから調整してください。\n\n## Arduino IDEで開く\n\n`RemoteObstacleCar.ino`を開き、ボードをArduino Unoにします。IRremote 4.4.1でビルドを確認する構成です。Servoライブラリは不要です。ZIPでは同名のRemoteObstacleCarフォルダへ配置しています。独自ヘッダーの追加は不要です。\n\n## 検証の範囲\n\n本番の`.ino`を模擬I/Oで直接実行し、15cm/5cmの境界、強制後退、後方からの前進、ブザー周期、STOP、前後同時、方向切替停止、超音波失敗、長押し継続・解除、期限境界、古いリピートの拒否、送信元照合、回避中の長押し解除、回避上限、時計の折り返しをテストしています。UNOビルド結果は同梱BUILD_CHECK.mdに記録します。\n\n実機走行・配線・検知距離・センサー極性・ブレーキ距離は未確認です。超音波は60ms周期で読み、`pulseIn()`は最大15ms、サーボのパルス出力は約1.5ms待機するため、検知・停止には遅延があります。5cmでの物理的な衝突防止を保証する値ではありません。\n\n## 読みやすさの改善\n\n設定・状態・モーター操作・長押し受信・センサー・回避・ブザー・初期化の順に分け、行間と字下げを統一しました。コード表示ページには色分けと行番号を追加しています。コピー時に行番号は入りません。\n",
       "status": "設計済み"
     },
     {
@@ -33,7 +33,7 @@
       "kind": "detailed",
       "title": "今回の仕様 / setMotors",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "function": "setMotors",
       "category": "今回の仕様・define版",
@@ -55,7 +55,7 @@
       "kind": "detailed",
       "title": "今回の仕様 / go_Advance",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "function": "go_Advance",
       "category": "今回の仕様・define版",
@@ -77,7 +77,7 @@
       "kind": "detailed",
       "title": "今回の仕様 / go_Back",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "function": "go_Back",
       "category": "今回の仕様・define版",
@@ -99,7 +99,7 @@
       "kind": "detailed",
       "title": "今回の仕様 / go_Right",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "function": "go_Right",
       "category": "今回の仕様・define版",
@@ -121,7 +121,7 @@
       "kind": "detailed",
       "title": "今回の仕様 / go_Left",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "function": "go_Left",
       "category": "今回の仕様・define版",
@@ -143,7 +143,7 @@
       "kind": "detailed",
       "title": "今回の仕様 / stop_Stop",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "function": "stop_Stop",
       "category": "今回の仕様・define版",
@@ -165,7 +165,7 @@
       "kind": "detailed",
       "title": "今回の仕様 / resetToStop",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "function": "resetToStop",
       "category": "今回の仕様・define版",
@@ -187,7 +187,7 @@
       "kind": "detailed",
       "title": "今回の仕様 / updateRemoteHold",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "function": "updateRemoteHold",
       "category": "今回の仕様・define版",
@@ -209,7 +209,7 @@
       "kind": "detailed",
       "title": "今回の仕様 / decodeRemoteDirection",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "function": "decodeRemoteDirection",
       "category": "今回の仕様・define版",
@@ -231,7 +231,7 @@
       "kind": "detailed",
       "title": "今回の仕様 / isSameRemote",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "function": "isSameRemote",
       "category": "今回の仕様・define版",
@@ -253,7 +253,7 @@
       "kind": "detailed",
       "title": "今回の仕様 / do_IR_Tick",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "function": "do_IR_Tick",
       "category": "今回の仕様・define版",
@@ -273,9 +273,31 @@
     {
       "id": "LATEST-FD-12",
       "kind": "detailed",
+      "title": "今回の仕様 / keepHeadForward",
+      "visibility": "public",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
+      "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
+      "function": "keepHeadForward",
+      "category": "今回の仕様・define版",
+      "functionForm": "void keepHeadForward()",
+      "overview": "元のD5でサーボの正面保持用パルスを出す",
+      "processing": "前回から20ms以上ならD5をHIGHにし、micros差分で約1500μs後にLOW。割り込みは有効。超音波待機などで周期が延びる場合がある。Timer1・D9/D6のPWM設定は変更しない。",
+      "args": "なし",
+      "returns": "なし",
+      "input": "micros、SERVO_CENTER_US、SERVO_PERIOD_US",
+      "output": "D5のパルス、前回出力時刻",
+      "sourceFile": "RemoteObstacleCar/RemoteObstacleCar.ino",
+      "calledFunctions": "micros, digitalWrite",
+      "designLayout": "function-sheet-v1",
+      "content": "元のD5でサーボの正面保持用パルスを出す\n前回から20ms以上ならD5をHIGHにし、micros差分で約1500μs後にLOW。割り込みは有効。超音波待機などで周期が延びる場合がある。Timer1・D9/D6のPWM設定は変更しない。",
+      "status": "実機未検証"
+    },
+    {
+      "id": "LATEST-FD-13",
+      "kind": "detailed",
       "title": "今回の仕様 / watch",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "function": "watch",
       "category": "今回の仕様・define版",
@@ -293,11 +315,11 @@
       "status": "実機未検証"
     },
     {
-      "id": "LATEST-FD-13",
+      "id": "LATEST-FD-14",
       "kind": "detailed",
       "title": "今回の仕様 / updateSensors",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "function": "updateSensors",
       "category": "今回の仕様・define版",
@@ -315,11 +337,11 @@
       "status": "実機未検証"
     },
     {
-      "id": "LATEST-FD-14",
+      "id": "LATEST-FD-15",
       "kind": "detailed",
       "title": "今回の仕様 / checkSensorsAndObstacles",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "function": "checkSensorsAndObstacles",
       "category": "今回の仕様・define版",
@@ -337,11 +359,11 @@
       "status": "実機未検証"
     },
     {
-      "id": "LATEST-FD-15",
+      "id": "LATEST-FD-16",
       "kind": "detailed",
       "title": "今回の仕様 / getBuzzerPeriod",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "function": "getBuzzerPeriod",
       "category": "今回の仕様・define版",
@@ -359,11 +381,11 @@
       "status": "実機未検証"
     },
     {
-      "id": "LATEST-FD-16",
+      "id": "LATEST-FD-17",
       "kind": "detailed",
       "title": "今回の仕様 / warning",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "function": "warning",
       "category": "今回の仕様・define版",
@@ -381,11 +403,11 @@
       "status": "実機未検証"
     },
     {
-      "id": "LATEST-FD-17",
+      "id": "LATEST-FD-18",
       "kind": "detailed",
       "title": "今回の仕様 / do_Drive_Tick",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "function": "do_Drive_Tick",
       "category": "今回の仕様・define版",
@@ -403,47 +425,47 @@
       "status": "実機未検証"
     },
     {
-      "id": "LATEST-FD-18",
+      "id": "LATEST-FD-19",
       "kind": "detailed",
       "title": "今回の仕様 / setup",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "function": "setup",
       "category": "今回の仕様・define版",
       "functionForm": "void setup()",
       "overview": "停止状態で初期化する",
-      "processing": "I/Oを設定し停止。ブザーOFF、Trig LOW。サーボを90度へ向けて400ms待ち、IR受信を開始。",
+      "processing": "I/Oを設定し停止。ブザーOFF、Trig LOW。keepHeadForwardで約400ms正面合わせした後、IR受信を開始する。",
       "args": "なし",
       "returns": "なし",
       "input": "ピン設定",
       "output": "#defineに沿った初期状態",
       "sourceFile": "RemoteObstacleCar/RemoteObstacleCar.ino",
-      "calledFunctions": "pinMode, stop_Stop, resetToStop, digitalWrite, Servo.attach, Servo.write, delay, IrReceiver.begin",
+      "calledFunctions": "pinMode, stop_Stop, resetToStop, digitalWrite, millis, keepHeadForward, IrReceiver.begin",
       "designLayout": "function-sheet-v1",
-      "content": "停止状態で初期化する\nI/Oを設定し停止。ブザーOFF、Trig LOW。サーボを90度へ向けて400ms待ち、IR受信を開始。",
+      "content": "停止状態で初期化する\nI/Oを設定し停止。ブザーOFF、Trig LOW。keepHeadForwardで約400ms正面合わせした後、IR受信を開始する。",
       "status": "実機未検証"
     },
     {
-      "id": "LATEST-FD-19",
+      "id": "LATEST-FD-20",
       "kind": "detailed",
       "title": "今回の仕様 / loop",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "function": "loop",
       "category": "今回の仕様・define版",
       "functionForm": "void loop()",
       "overview": "リモコン・センサー・回避・ブザー・モーターを繰り返し更新する",
-      "processing": "長押し期限・IR→センサー→IR再確認→車両状態→ブザー→モーター。超音波待機中に届いたSTOPも出力前に取り込む。",
+      "processing": "長押し期限・IR→サーボ正面保持→センサー→IR再確認→車両状態→ブザー→モーター。超音波待機中に届いたSTOPも出力前に取り込む。",
       "args": "なし",
       "returns": "なし",
       "input": "リモコン、センサー",
       "output": "モーター、ブザー",
       "sourceFile": "RemoteObstacleCar/RemoteObstacleCar.ino",
-      "calledFunctions": "do_IR_Tick, updateSensors, checkSensorsAndObstacles, warning, do_Drive_Tick",
+      "calledFunctions": "do_IR_Tick, keepHeadForward, updateSensors, checkSensorsAndObstacles, warning, do_Drive_Tick",
       "designLayout": "function-sheet-v1",
-      "content": "リモコン・センサー・回避・ブザー・モーターを繰り返し更新する\n長押し期限・IR→センサー→IR再確認→車両状態→ブザー→モーター。超音波待機中に届いたSTOPも出力前に取り込む。",
+      "content": "リモコン・センサー・回避・ブザー・モーターを繰り返し更新する\n長押し期限・IR→サーボ正面保持→センサー→IR再確認→車両状態→ブザー→モーター。超音波待機中に届いたSTOPも出力前に取り込む。",
       "status": "実機未検証"
     },
     {
@@ -457,7 +479,7 @@
       "category": "機能要件",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "notes": "今回のユーザー指定を反映。UNOコンパイル・模擬I/Oテスト済み、実機未検証。"
     },
     {
@@ -471,7 +493,7 @@
       "category": "機能要件",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "notes": "今回のユーザー指定を反映。UNOコンパイル・模擬I/Oテスト済み、実機未検証。"
     },
     {
@@ -485,7 +507,7 @@
       "category": "機能要件",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "notes": "今回のユーザー指定を反映。UNOコンパイル・模擬I/Oテスト済み、実機未検証。"
     },
     {
@@ -499,7 +521,7 @@
       "category": "機能要件",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "notes": "今回のユーザー指定を反映。UNOコンパイル・模擬I/Oテスト済み、実機未検証。"
     },
     {
@@ -513,7 +535,7 @@
       "category": "機能要件",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "notes": "今回のユーザー指定を反映。UNOコンパイル・模擬I/Oテスト済み、実機未検証。"
     },
     {
@@ -527,7 +549,7 @@
       "category": "機能要件",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "notes": "今回のユーザー指定を反映。UNOコンパイル・模擬I/Oテスト済み、実機未検証。"
     },
     {
@@ -541,7 +563,7 @@
       "category": "機能要件",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "notes": "今回のユーザー指定を反映。UNOコンパイル・模擬I/Oテスト済み、実機未検証。"
     },
     {
@@ -555,7 +577,7 @@
       "category": "機能要件",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "notes": "今回のユーザー指定を反映。UNOコンパイル・模擬I/Oテスト済み、実機未検証。"
     },
     {
@@ -569,7 +591,7 @@
       "category": "機能要件",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "notes": "今回のユーザー指定を反映。UNOコンパイル・模擬I/Oテスト済み、実機未検証。"
     },
     {
@@ -583,7 +605,7 @@
       "category": "機能要件",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "notes": "今回のユーザー指定を反映。UNOコンパイル・模擬I/Oテスト済み、実機未検証。"
     },
     {
@@ -597,7 +619,7 @@
       "category": "機能要件",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "notes": "今回のユーザー指定を反映。UNOコンパイル・模擬I/Oテスト済み、実機未検証。"
     },
     {
@@ -611,7 +633,7 @@
       "category": "機能要件",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "notes": "今回のユーザー指定を反映。UNOコンパイル・模擬I/Oテスト済み、実機未検証。"
     },
     {
@@ -625,7 +647,7 @@
       "category": "機能要件",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "notes": "今回のユーザー指定を反映。UNOコンパイル・模擬I/Oテスト済み、実機未検証。"
     },
     {
@@ -641,7 +663,7 @@
       "expected": "上の長押し中のみ前進。最後の有効受信から250ms以上で停止。",
       "actual": "",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "notes": "実機テスト未実施。模擬I/Oテストの結果はBUILD_CHECK.mdに分離。"
     },
     {
@@ -657,7 +679,7 @@
       "expected": "下の長押し中のみ後退。最後の有効受信から250ms以上で停止。",
       "actual": "",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "notes": "実機テスト未実施。模擬I/Oテストの結果はBUILD_CHECK.mdに分離。"
     },
     {
@@ -673,7 +695,7 @@
       "expected": "左の長押し中のみ左旋回。最後の有効受信から250ms以上で停止。",
       "actual": "",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "notes": "実機テスト未実施。模擬I/Oテストの結果はBUILD_CHECK.mdに分離。"
     },
     {
@@ -689,7 +711,7 @@
       "expected": "右の長押し中のみ右旋回。最後の有効受信から250ms以上で停止。",
       "actual": "",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "notes": "実機テスト未実施。模擬I/Oテストの結果はBUILD_CHECK.mdに分離。"
     },
     {
@@ -705,7 +727,7 @@
       "expected": "15cm超は警告なし、15cm以内は警告、5cm以下は後退。無応答は停止。",
       "actual": "",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "notes": "実機テスト未実施。模擬I/Oテストの結果はBUILD_CHECK.mdに分離。"
     },
     {
@@ -721,7 +743,7 @@
       "expected": "15/10/5cmで周期600/350/100ms、ON35ms。近づくほど間隔が短い。",
       "actual": "",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "notes": "実機テスト未実施。模擬I/Oテストの結果はBUILD_CHECK.mdに分離。"
     },
     {
@@ -737,7 +759,7 @@
       "expected": "前方5cm以下で強制後退する。後方も検知時・OK停止中は停止。",
       "actual": "",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "notes": "実機テスト未実施。模擬I/Oテストの結果はBUILD_CHECK.mdに分離。"
     },
     {
@@ -753,7 +775,7 @@
       "expected": "強制後退は前方15cm超で停止。後方検知が加われば停止。3秒上限も停止。",
       "actual": "",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "notes": "実機テスト未実施。模擬I/Oテストの結果はBUILD_CHECK.mdに分離。"
     },
     {
@@ -769,7 +791,7 @@
       "expected": "後方いずれかLOWで前進。検知解除で停止。前方5cm以下も同時なら停止。",
       "actual": "",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "notes": "実機テスト未実施。模擬I/Oテストの結果はBUILD_CHECK.mdに分離。"
     },
     {
@@ -785,7 +807,7 @@
       "expected": "前方5cm以下と後方同時検知で停止する。",
       "actual": "",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "notes": "実機テスト未実施。模擬I/Oテストの結果はBUILD_CHECK.mdに分離。"
     },
     {
@@ -801,7 +823,7 @@
       "expected": "回避終了・異常停止後は旧指令で走り出さず、新しい方向操作で再開する。",
       "actual": "",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "notes": "実機テスト未実施。模擬I/Oテストの結果はBUILD_CHECK.mdに分離。"
     },
     {
@@ -817,7 +839,7 @@
       "expected": "OKと異常・前後同時停止が最優先。自動回避中は方向指令より回避を優先。",
       "actual": "",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "notes": "実機テスト未実施。模擬I/Oテストの結果はBUILD_CHECK.mdに分離。"
     },
     {
@@ -833,7 +855,7 @@
       "expected": "今回の初期設定AUTO_MAX_MS=3000で、回避開始から3秒以上継続したら停止し、新しい方向操作まで再始動しない。",
       "actual": "",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "notes": "実機テスト未実施。模擬I/Oテストの結果はBUILD_CHECK.mdに分離。"
     },
     {
@@ -847,14 +869,14 @@
       "cause": "資料間の仕様不一致",
       "action": "RemoteObstacleCar.inoと要件・テスト期待値を今回の指定へ更新。実機試験は未実施。",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00"
+      "updated": "2026-11-13T14:20:23.677096+09:00"
     },
     {
       "id": "TC-HOLD-001",
       "kind": "tests",
       "title": "長押し継続・解除と回避中の停止",
       "visibility": "public",
-      "updated": "2026-11-13T13:15:29.358418+09:00",
+      "updated": "2026-11-13T14:20:23.677096+09:00",
       "links": "LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN",
       "status": "未実施",
       "purpose": "4方向と自動回避の長押し解除を確認",
@@ -1593,14 +1615,14 @@
     {
       "id": "LATEST-INO",
       "group_id": "LATEST-INO",
-      "title": "今回の仕様・define宣言の1ファイルコード",
+      "title": "code.txtと同じピン・長押し操作コード",
       "name": "RemoteObstacleCar.ino",
       "url": "code/RemoteObstacleCar/RemoteObstacleCar.ino",
-      "size": 15292,
+      "size": 16607,
       "category": "05_ソースコード",
-      "description": "15cmで段階警告・5cmで強制後退・後方検知で前進。配線と使用手順を確認。実機未検証。",
+      "description": "code.txtと同じピン配置。長押し操作、15cmで警告・5cmで後退・後方検知で前進。使用手順を確認。実機未検証。",
       "visibility": "public",
-      "created": "2026-11-13T13:15:29.358418+09:00",
+      "created": "2026-11-13T14:20:23.677096+09:00",
       "shared": false
     },
     {
@@ -1609,37 +1631,37 @@
       "title": "今回の仕様・コードと手順と設計書一式",
       "name": "RemoteObstacleCar.zip",
       "url": "code/RemoteObstacleCar/RemoteObstacleCar.zip",
-      "size": 22390,
+      "size": 24700,
       "category": "05_ソースコード",
-      "description": "15cmで段階警告・5cmで強制後退・後方検知で前進。配線と使用手順を確認。実機未検証。",
+      "description": "code.txtと同じピン配置。長押し操作、15cmで警告・5cmで後退・後方検知で前進。使用手順を確認。実機未検証。",
       "visibility": "public",
-      "created": "2026-11-13T13:15:29.358418+09:00",
+      "created": "2026-11-13T14:20:23.677096+09:00",
       "shared": false
     },
     {
       "id": "LATEST-CODE-PAGE",
       "group_id": "LATEST-CODE-PAGE",
-      "title": "今回の仕様・コード表示とコピー",
+      "title": "code.txtと同じピン・コード表示とコピー",
       "name": "Code.html",
       "url": "design/RemoteObstacleCar/Code.html",
-      "size": 57082,
+      "size": 60960,
       "category": "05_ソースコード",
-      "description": "15cmで段階警告・5cmで強制後退・後方検知で前進。配線と使用手順を確認。実機未検証。",
+      "description": "code.txtと同じピン配置。長押し操作、15cmで警告・5cmで後退・後方検知で前進。使用手順を確認。実機未検証。",
       "visibility": "public",
-      "created": "2026-11-13T13:15:29.358418+09:00",
+      "created": "2026-11-13T14:20:23.677096+09:00",
       "shared": false
     },
     {
       "id": "LATEST-GUIDE",
       "group_id": "LATEST-GUIDE",
-      "title": "今回の仕様・配線と使用手順",
+      "title": "code.txtと同じピン・配線と使用手順",
       "name": "README.md",
       "url": "code/RemoteObstacleCar/README.md",
-      "size": 8069,
+      "size": 9408,
       "category": "12_参考資料",
-      "description": "15cmで段階警告・5cmで強制後退・後方検知で前進。配線と使用手順を確認。実機未検証。",
+      "description": "code.txtと同じピン配置。長押し操作、15cmで警告・5cmで後退・後方検知で前進。使用手順を確認。実機未検証。",
       "visibility": "public",
-      "created": "2026-11-13T13:15:29.358418+09:00",
+      "created": "2026-11-13T14:20:23.677096+09:00",
       "shared": false
     },
     {
@@ -1648,11 +1670,11 @@
       "title": "今回の仕様・表形式の関数設計書",
       "name": "FunctionDesign.html",
       "url": "design/RemoteObstacleCar/FunctionDesign.html",
-      "size": 19857,
+      "size": 20976,
       "category": "03_詳細設計",
-      "description": "15cmで段階警告・5cmで強制後退・後方検知で前進。配線と使用手順を確認。実機未検証。",
+      "description": "code.txtと同じピン配置。長押し操作、15cmで警告・5cmで後退・後方検知で前進。使用手順を確認。実機未検証。",
       "visibility": "public",
-      "created": "2026-11-13T13:15:29.358418+09:00",
+      "created": "2026-11-13T14:20:23.677096+09:00",
       "shared": false
     }
   ]

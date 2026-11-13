@@ -8,9 +8,11 @@ records=[];files=[]
 links='LATEST-CODE, LATEST-GUIDE, LATEST-DESIGN'
 def record(id,kind,title,**kw):
  r=dict(id=id,kind=kind,title=title,visibility='public',updated=now,links=links,**kw);records.append(r);return r
-record('LATEST-CODE','codes','今回の仕様 / RemoteObstacleCar.ino（長押し・define）',filename='RemoteObstacleCar.ino',category='今回の仕様・define版',code=code,content='方向は長押し中だけ有効。最終受信から250ms以上途切れたら回避中も停止。前方15cm以内でブザー、5cm以下で後退、後方検知で前進。OK優先・前後同時停止。#defineで設定、独自ヘッダー不要。旧FlowchartRobotの5cm停止とは動作が異なる。',status='実機未検証',pins='ENA D5 / ENB D6 / Servo D9 / Echo D3 / Trig D10 / IR受信 D4 / ブザー D13 / 後方 D0,D2',libraries='IRremote 4.4.1 / Servo 1.2.2 / Arduino Uno')
+record('LATEST-CODE','codes','code.txtと同じピン / RemoteObstacleCar.ino（長押し）',filename='RemoteObstacleCar.ino',category='今回の仕様・define版',code=code,content='code.txtと全13本のピン・5つのボタン値が一致。方向は長押し中だけ有効。最終受信から250ms以上途切れたら回避中も停止。前方15cm以内でブザー、5cm以下で後退、後方検知で前進。OK優先・前後同時停止。#defineで設定、独自ヘッダー不要。旧FlowchartRobotの5cm停止とは動作が異なる。',status='実機未検証',pins='ENA D9 / ENB D6 / Servo D5 / Echo D3 / Trig D10 / IR受信 D4 / ブザー D13 / 後方 D0,D2',libraries='IRremote 4.4.1のみ / Arduino Uno / ソフトウェア正面保持')
 record('LATEST-SPEC','basic','今回の仕様：15cmで警告・5cmで後退・後方検知で前進',category='今回の仕様',content=guide,status='設計済み')
 info={
+'keepHeadForward':('元のD5でサーボの正面保持用パルスを出す','前回から20ms以上ならD5をHIGHにし、micros差分で約1500μs後にLOW。割り込みは有効。超音波待機などで周期が延びる場合がある。Timer1・D9/D6のPWM設定は変更しない。','なし','なし','micros、SERVO_CENTER_US、SERVO_PERIOD_US','D5のパルス、前回出力時刻','micros, digitalWrite'),
+
 'updateRemoteHold':('長押し終了を受信間隔で検知する','長押し中で最終受信から250ms以上経過したらresetToStop。差分計算で時計の折り返しを扱う。','なし','なし','holdActive、lastRemoteAt、millis','指令・回避の停止','millis, resetToStop'),
 'decodeRemoteDirection':('方向キーを車両の動作へ変換する','24=前進、82=後退、90=右、8=左。その他はSTOP_STOPを返し、呼出側で未使用キーとして無視する。','command: リモコンコマンド','DN: 動作','コマンド値','動作列挙型','なし'),
 'isSameRemote':('繰り返し信号の送信元を照合する','前回と同じアドレス・通信方式かを比較する。NECとNEC2は同じ系統として扱う。','address:アドレス、protocol:通信方式','bool: 一致ならtrue','現在の受信情報、前回受信情報','照合結果','なし'),
@@ -29,8 +31,8 @@ info={
 'getBuzzerPeriod':('近づくほど警告周期を短くする','15cm=600ms、5cm以下=100ms。間は線形補間し、10cm=350msになる。呼出側が15cm以内かを判定する。','cm: 前方距離cm','uint32_t: ブザー周期ms','前方距離','周期（ms）','なし'),
 'warning':('距離に応じたブザーを鳴らす','15cm以内なら先頭35msだけONにし、距離に応じた周期で反復。15cm超または測定無効ならOFF。delay/toneは使わない。停止中も距離警告を続ける。','なし','なし','distanceCm、distanceValid、millis','D13のLOW/HIGH','millis, getBuzzerPeriod, digitalWrite'),
 'do_Drive_Tick':('実行動作をモーターへ反映する','停止なら直ちにPWM0。反転を伴う場合もPWM0にして100ms待ち、その間は関数から戻る。時間経過後に方向別の関数を呼ぶ。','なし','なし','Drive_Num、DriveSpeed、前回出力、millis','モーター出力、反転待ち状態','millis, stop_Stop, go_Advance, go_Back, go_Right, go_Left'),
-'setup':('停止状態で初期化する','I/Oを設定し停止。ブザーOFF、Trig LOW。サーボを90度へ向けて400ms待ち、IR受信を開始。','なし','なし','ピン設定','#defineに沿った初期状態','pinMode, stop_Stop, resetToStop, digitalWrite, Servo.attach, Servo.write, delay, IrReceiver.begin'),
-'loop':('リモコン・センサー・回避・ブザー・モーターを繰り返し更新する','長押し期限・IR→センサー→IR再確認→車両状態→ブザー→モーター。超音波待機中に届いたSTOPも出力前に取り込む。','なし','なし','リモコン、センサー','モーター、ブザー','do_IR_Tick, updateSensors, checkSensorsAndObstacles, warning, do_Drive_Tick'),
+'setup':('停止状態で初期化する','I/Oを設定し停止。ブザーOFF、Trig LOW。keepHeadForwardで約400ms正面合わせした後、IR受信を開始する。','なし','なし','ピン設定','#defineに沿った初期状態','pinMode, stop_Stop, resetToStop, digitalWrite, millis, keepHeadForward, IrReceiver.begin'),
+'loop':('リモコン・センサー・回避・ブザー・モーターを繰り返し更新する','長押し期限・IR→サーボ正面保持→センサー→IR再確認→車両状態→ブザー→モーター。超音波待機中に届いたSTOPも出力前に取り込む。','なし','なし','リモコン、センサー','モーター、ブザー','do_IR_Tick, keepHeadForward, updateSensors, checkSensorsAndObstacles, warning, do_Drive_Tick'),
 }
 forms={m.group(2):m.group(1)+' '+m.group(2)+'('+m.group(3)+')' for m in re.finditer(r'^(void|float|uint32_t|bool|DN)\s+(\w+)\(([^)]*)\)\s*\{',code,re.M)}
 assert set(forms)==set(info),(set(forms)-set(info),set(info)-set(forms))
@@ -66,7 +68,7 @@ htmlpage=lambda title,body:'<!doctype html><html lang="ja"><meta charset="utf-8"
 (design/'FunctionDesign.html').write_text(htmlpage('今回の仕様版・関数設計書', ''.join(sheets)))
 nav='<nav><a href="../../code/RemoteObstacleCar/RemoteObstacleCar.ino" download>この.inoをダウンロード</a><a href="../../code/RemoteObstacleCar/RemoteObstacleCar.zip" download>コード・手順・設計書一式</a><a href="FunctionDesign.html">関数設計書</a><a href="../../code/RemoteObstacleCar/README.md">配線・使用手順</a></nav>'
 summary='<table><tr><th>条件</th><th>動作</th></tr><tr><td>上・下・右・左</td><td>長押し中のみ前進・後退・右旋回・左旋回</td></tr><tr><td>ボタンを離す・受信が途切れる</td><td>最終の有効受信から250ms以上で停止（回避中も同じ）</td></tr><tr><td>前方15cm以内</td><td>近づくほどブザー間隔を短くする（15cm=600ms、10cm=350ms、5cm以下=100ms）</td></tr><tr><td>前方5cm以下</td><td>強制後退。15cmより離れたら停止</td></tr><tr><td>後方障害物</td><td>自動前進。後方検知がなくなったら停止</td></tr><tr><td>OK・超音波失敗・前後がふさがった</td><td>停止。回避完了後は新しい方向操作で再開</td></tr></table>'
-(design/'Code.html').write_text(htmlpage('今回の仕様：define版 RemoteObstacleCar', '<main><h1>今回の仕様：長押し操作・define版</h1><p>RemoteObstacleCar.ino / Arduino UNO・OSOYOO Model X</p>'+summary+nav+'<p class="note">配線は前の修正版と同じです。元のcode.txtからは、右ENAをD9→D5、サーボ信号をD5→D9へ移してください。EchoはD3、後方はD0/D2です。UNOコンパイル・模擬I/Oテスト済み、実機走行は未検証。</p><button id="copy" type="button">コードをコピー</button><span id="message" role="status"></span><pre><code id="source">'+highlight_cpp(code)+'</code></pre></main><script>document.getElementById("copy").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(document.getElementById("source").textContent);document.getElementById("message").textContent=" コピーしました"}catch{document.getElementById("message").textContent=" コードを選択してコピーしてください"}});</script>'))
+(design/'Code.html').write_text(htmlpage('今回の仕様：define版 RemoteObstacleCar', '<main><h1>code.txtと同じピン：長押し操作版</h1><p>RemoteObstacleCar.ino / Arduino UNO・OSOYOO Model X</p>'+summary+nav+'<p class="note">code.txtとピン番号が一致しています。右ENA=D9、左ENB=D6、サーボ=D5、Echo=D3、Trig=D10、IR受信=D4、後方=D0/D2、ブザー=D13。配線変更は不要です。サーボはソフトウェアの正面保持用パルスに変更しています。実機走行・サーボの向きは未検証です。</p><button id="copy" type="button">コードをコピー</button><span id="message" role="status"></span><pre><code id="source">'+highlight_cpp(code)+'</code></pre></main><script>document.getElementById("copy").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(document.getElementById("source").textContent);document.getElementById("message").textContent=" コピーしました"}catch{document.getElementById("message").textContent=" コードを選択してコピーしてください"}});</script>'))
 # 既存の要件・テストを今回のユーザー指定へ整合させる。
 updates={
 'FR-001':('リモコン前進・長押し操作','上を長押ししている間だけ前進。有効受信が250ms以上途切れると停止。'),
@@ -125,12 +127,12 @@ with zipfile.ZipFile(zipfile_path,'w',zipfile.ZIP_DEFLATED) as z:
  for f in (root/'tests/remote-obstacle').rglob('*'):
   if f.is_file():z.write(f,str(f.relative_to(root)))
 for id,title,path,category in [
-('LATEST-INO','今回の仕様・define宣言の1ファイルコード','code/RemoteObstacleCar/RemoteObstacleCar.ino','05_ソースコード'),
+('LATEST-INO','code.txtと同じピン・長押し操作コード','code/RemoteObstacleCar/RemoteObstacleCar.ino','05_ソースコード'),
 ('LATEST-ZIP','今回の仕様・コードと手順と設計書一式','code/RemoteObstacleCar/RemoteObstacleCar.zip','05_ソースコード'),
-('LATEST-CODE-PAGE','今回の仕様・コード表示とコピー','design/RemoteObstacleCar/Code.html','05_ソースコード'),
-('LATEST-GUIDE','今回の仕様・配線と使用手順','code/RemoteObstacleCar/README.md','12_参考資料'),
+('LATEST-CODE-PAGE','code.txtと同じピン・コード表示とコピー','design/RemoteObstacleCar/Code.html','05_ソースコード'),
+('LATEST-GUIDE','code.txtと同じピン・配線と使用手順','code/RemoteObstacleCar/README.md','12_参考資料'),
 ('LATEST-DESIGN','今回の仕様・表形式の関数設計書','design/RemoteObstacleCar/FunctionDesign.html','03_詳細設計')]:
- p=docs/path;files.append(dict(id=id,group_id=id,title=title,name=p.name,url=path,size=p.stat().st_size,category=category,description='15cmで段階警告・5cmで強制後退・後方検知で前進。配線と使用手順を確認。実機未検証。',visibility='public',created=now,shared=False))
+ p=docs/path;files.append(dict(id=id,group_id=id,title=title,name=p.name,url=path,size=p.stat().st_size,category=category,description='code.txtと同じピン配置。長押し操作、15cmで警告・5cmで後退・後方検知で前進。使用手順を確認。実機未検証。',visibility='public',created=now,shared=False))
 ri={r['id'] for r in records};fi={f['id'] for f in files}
 catalog['records']=[r for r in catalog['records'] if r['id'] not in ri]+records
 catalog['files']=[f for f in catalog['files'] if f['id'] not in fi]+files

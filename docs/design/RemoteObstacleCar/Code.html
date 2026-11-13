@@ -1,29 +1,29 @@
-<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>今回の仕様：define版 RemoteObstacleCar</title><style>body{font-family:Meiryo,sans-serif;color:#17212e;margin:24px;background:#edf1f4}main,section{max-width:1040px;background:white;padding:28px;margin:0 auto 24px}h1{font-size:26px}h2{font-size:20px}table{width:100%;border-collapse:collapse}td,th{border:1px solid #aab4bf;padding:13px;text-align:left;vertical-align:top}th{background:#f1f5f8}td{line-height:1.7;overflow-wrap:anywhere}a,button{color:#086b70}nav{display:flex;flex-wrap:wrap;gap:18px;margin:20px 0}pre{overflow:auto;background:#101b29;color:#e3edf7;padding:20px;font-size:14px;line-height:1.65;border-radius:8px}.note{border-left:4px solid #d88a24;padding:12px;background:#fff6e8}@media(max-width:600px){body{margin:8px}main,section{padding:16px}table{font-size:13px}}@media print{body{background:white;margin:0}section{break-after:page}section:last-child{break-after:auto}nav,button{display:none}pre{white-space:pre-wrap;background:white;color:black}}.code-line{display:inline-block;min-width:100%;white-space:pre}.code-line::before{content:attr(data-line);display:inline-block;width:3em;margin-right:1.5em;text-align:right;color:#6c8197;user-select:none}.tok-comment{color:#91a9bb}.tok-directive{color:#72dcf7}.tok-keyword{color:#d6a3ff}.tok-constant{color:#ffda85}.tok-string{color:#9fe8ac}.tok-number{color:#ffc38f}#copy{padding:10px 18px;background:#086b70;color:white;border:0;border-radius:6px}pre{line-height:1.9}</style><main><h1>今回の仕様：長押し操作・define版</h1><p>RemoteObstacleCar.ino / Arduino UNO・OSOYOO Model X</p><table><tr><th>条件</th><th>動作</th></tr><tr><td>上・下・右・左</td><td>長押し中のみ前進・後退・右旋回・左旋回</td></tr><tr><td>ボタンを離す・受信が途切れる</td><td>最終の有効受信から250ms以上で停止（回避中も同じ）</td></tr><tr><td>前方15cm以内</td><td>近づくほどブザー間隔を短くする（15cm=600ms、10cm=350ms、5cm以下=100ms）</td></tr><tr><td>前方5cm以下</td><td>強制後退。15cmより離れたら停止</td></tr><tr><td>後方障害物</td><td>自動前進。後方検知がなくなったら停止</td></tr><tr><td>OK・超音波失敗・前後がふさがった</td><td>停止。回避完了後は新しい方向操作で再開</td></tr></table><nav><a href="../../code/RemoteObstacleCar/RemoteObstacleCar.ino" download>この.inoをダウンロード</a><a href="../../code/RemoteObstacleCar/RemoteObstacleCar.zip" download>コード・手順・設計書一式</a><a href="FunctionDesign.html">関数設計書</a><a href="../../code/RemoteObstacleCar/README.md">配線・使用手順</a></nav><p class="note">配線は前の修正版と同じです。元のcode.txtからは、右ENAをD9→D5、サーボ信号をD5→D9へ移してください。EchoはD3、後方はD0/D2です。UNOコンパイル・模擬I/Oテスト済み、実機走行は未検証。</p><button id="copy" type="button">コードをコピー</button><span id="message" role="status"></span><pre><code id="source"><span class="code-line" data-line="1"><span class="tok-comment">/*</span></span>
+<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>今回の仕様：define版 RemoteObstacleCar</title><style>body{font-family:Meiryo,sans-serif;color:#17212e;margin:24px;background:#edf1f4}main,section{max-width:1040px;background:white;padding:28px;margin:0 auto 24px}h1{font-size:26px}h2{font-size:20px}table{width:100%;border-collapse:collapse}td,th{border:1px solid #aab4bf;padding:13px;text-align:left;vertical-align:top}th{background:#f1f5f8}td{line-height:1.7;overflow-wrap:anywhere}a,button{color:#086b70}nav{display:flex;flex-wrap:wrap;gap:18px;margin:20px 0}pre{overflow:auto;background:#101b29;color:#e3edf7;padding:20px;font-size:14px;line-height:1.65;border-radius:8px}.note{border-left:4px solid #d88a24;padding:12px;background:#fff6e8}@media(max-width:600px){body{margin:8px}main,section{padding:16px}table{font-size:13px}}@media print{body{background:white;margin:0}section{break-after:page}section:last-child{break-after:auto}nav,button{display:none}pre{white-space:pre-wrap;background:white;color:black}}.code-line{display:inline-block;min-width:100%;white-space:pre}.code-line::before{content:attr(data-line);display:inline-block;width:3em;margin-right:1.5em;text-align:right;color:#6c8197;user-select:none}.tok-comment{color:#91a9bb}.tok-directive{color:#72dcf7}.tok-keyword{color:#d6a3ff}.tok-constant{color:#ffda85}.tok-string{color:#9fe8ac}.tok-number{color:#ffc38f}#copy{padding:10px 18px;background:#086b70;color:white;border:0;border-radius:6px}pre{line-height:1.9}</style><main><h1>code.txtと同じピン：長押し操作版</h1><p>RemoteObstacleCar.ino / Arduino UNO・OSOYOO Model X</p><table><tr><th>条件</th><th>動作</th></tr><tr><td>上・下・右・左</td><td>長押し中のみ前進・後退・右旋回・左旋回</td></tr><tr><td>ボタンを離す・受信が途切れる</td><td>最終の有効受信から250ms以上で停止（回避中も同じ）</td></tr><tr><td>前方15cm以内</td><td>近づくほどブザー間隔を短くする（15cm=600ms、10cm=350ms、5cm以下=100ms）</td></tr><tr><td>前方5cm以下</td><td>強制後退。15cmより離れたら停止</td></tr><tr><td>後方障害物</td><td>自動前進。後方検知がなくなったら停止</td></tr><tr><td>OK・超音波失敗・前後がふさがった</td><td>停止。回避完了後は新しい方向操作で再開</td></tr></table><nav><a href="../../code/RemoteObstacleCar/RemoteObstacleCar.ino" download>この.inoをダウンロード</a><a href="../../code/RemoteObstacleCar/RemoteObstacleCar.zip" download>コード・手順・設計書一式</a><a href="FunctionDesign.html">関数設計書</a><a href="../../code/RemoteObstacleCar/README.md">配線・使用手順</a></nav><p class="note">code.txtとピン番号が一致しています。右ENA=D9、左ENB=D6、サーボ=D5、Echo=D3、Trig=D10、IR受信=D4、後方=D0/D2、ブザー=D13。配線変更は不要です。サーボはソフトウェアの正面保持用パルスに変更しています。実機走行・サーボの向きは未検証です。</p><button id="copy" type="button">コードをコピー</button><span id="message" role="status"></span><pre><code id="source"><span class="code-line" data-line="1"><span class="tok-comment">/*</span></span>
 <span class="code-line" data-line="2"><span class="tok-comment"> * OSOYOO Robot Car / Arduino UNO / Model X</span></span>
 <span class="code-line" data-line="3"><span class="tok-comment"> *</span></span>
-<span class="code-line" data-line="4"><span class="tok-comment"> * 【操作】方向ボタンを長押ししている間だけ走行。離すと停止。</span></span>
-<span class="code-line" data-line="5"><span class="tok-comment"> * 【前方】15cm以内で警告音。近づくほど速く鳴り、5cm以下で後退。</span></span>
-<span class="code-line" data-line="6"><span class="tok-comment"> * 【後方】障害物を検知したら前進。</span></span>
-<span class="code-line" data-line="7"><span class="tok-comment"> * 【停止】OK、長押し終了、センサー異常、前後同時検知を優先。</span></span>
-<span class="code-line" data-line="8"><span class="tok-comment"> *</span></span>
-<span class="code-line" data-line="9"><span class="tok-comment"> * 独自ヘッダー不要の1ファイル版。実機走行は未検証。</span></span>
-<span class="code-line" data-line="10"><span class="tok-comment"> */</span></span>
-<span class="code-line" data-line="11"><span class="tok-directive">#include &lt;Arduino.h&gt;</span></span>
-<span class="code-line" data-line="12"></span>
-<span class="code-line" data-line="13"><span class="tok-comment">// ============================================================================</span></span>
-<span class="code-line" data-line="14"><span class="tok-comment">// 1. ライブラリ</span></span>
-<span class="code-line" data-line="15"><span class="tok-comment">// ============================================================================</span></span>
-<span class="code-line" data-line="16"><span class="tok-directive">#define IR_USE_AVR_TIMER2</span></span>
-<span class="code-line" data-line="17"><span class="tok-directive">#include &lt;IRremote.hpp&gt;  // Arduino-IRremote 4.4.1</span></span>
-<span class="code-line" data-line="18"><span class="tok-directive">#include &lt;Servo.h&gt;       // Servo 1.2.2</span></span>
+<span class="code-line" data-line="4"><span class="tok-comment"> * code.txtのピン番号・ボタン値・基本動作関数をそのまま使用。</span></span>
+<span class="code-line" data-line="5"><span class="tok-comment"> * 【操作】方向ボタンを長押ししている間だけ走行。離すと停止。</span></span>
+<span class="code-line" data-line="6"><span class="tok-comment"> * 【前方】15cm以内で警告音。近づくほど速く鳴り、5cm以下で後退。</span></span>
+<span class="code-line" data-line="7"><span class="tok-comment"> * 【後方】障害物を検知したら前進。</span></span>
+<span class="code-line" data-line="8"><span class="tok-comment"> * 【停止】OK、長押し終了、センサー異常、前後同時検知を優先。</span></span>
+<span class="code-line" data-line="9"><span class="tok-comment"> *</span></span>
+<span class="code-line" data-line="10"><span class="tok-comment"> * 独自ヘッダー不要の1ファイル版。実機走行は未検証。</span></span>
+<span class="code-line" data-line="11"><span class="tok-comment"> */</span></span>
+<span class="code-line" data-line="12"><span class="tok-directive">#include &lt;Arduino.h&gt;</span></span>
+<span class="code-line" data-line="13"></span>
+<span class="code-line" data-line="14"><span class="tok-comment">// ============================================================================</span></span>
+<span class="code-line" data-line="15"><span class="tok-comment">// 1. ライブラリ</span></span>
+<span class="code-line" data-line="16"><span class="tok-comment">// ============================================================================</span></span>
+<span class="code-line" data-line="17"><span class="tok-directive">#define IR_USE_AVR_TIMER2</span></span>
+<span class="code-line" data-line="18"><span class="tok-directive">#include &lt;IRremote.hpp&gt;  // Arduino-IRremote 4.4.1</span></span>
 <span class="code-line" data-line="19"></span>
 <span class="code-line" data-line="20"><span class="tok-comment">// ============================================================================</span></span>
 <span class="code-line" data-line="21"><span class="tok-comment">// 2. ピン設定</span></span>
 <span class="code-line" data-line="22"><span class="tok-comment">// ============================================================================</span></span>
-<span class="code-line" data-line="23"><span class="tok-comment">// 元のcode.txtから、右ENAはD9→D5、サーボ信号はD5→D9へ変更。</span></span>
-<span class="code-line" data-line="24"><span class="tok-comment">// ServoとIRremoteのタイマーと競合しないよう、速度PWMはD5/D6を使用。</span></span>
+<span class="code-line" data-line="23"><span class="tok-comment">// code.txtと同じピン番号。配線の変更は不要。</span></span>
+<span class="code-line" data-line="24"><span class="tok-comment">// サーボはソフトウェアのパルス出力にし、D9のPWMタイマーを専有しない。</span></span>
 <span class="code-line" data-line="25"><span class="tok-directive">#define IR_RECEIVE_PIN      4</span></span>
-<span class="code-line" data-line="26"><span class="tok-directive">#define speedPinR           5</span></span>
+<span class="code-line" data-line="26"><span class="tok-directive">#define speedPinR           9</span></span>
 <span class="code-line" data-line="27"><span class="tok-directive">#define RightDirectPin1    12</span></span>
 <span class="code-line" data-line="28"><span class="tok-directive">#define RightDirectPin2    11</span></span>
 <span class="code-line" data-line="29"><span class="tok-directive">#define speedPinL           6</span></span>
@@ -34,7 +34,7 @@
 <span class="code-line" data-line="34"><span class="tok-directive">#define LFSensor_br         2</span></span>
 <span class="code-line" data-line="35"><span class="tok-directive">#define Echo_PIN            3</span></span>
 <span class="code-line" data-line="36"><span class="tok-directive">#define Trig_PIN           10</span></span>
-<span class="code-line" data-line="37"><span class="tok-directive">#define SERVO_PIN           9</span></span>
+<span class="code-line" data-line="37"><span class="tok-directive">#define SERVO_PIN           5</span></span>
 <span class="code-line" data-line="38"><span class="tok-directive">#define REAR_ACTIVE_LEVEL LOW</span></span>
 <span class="code-line" data-line="39"><span class="tok-directive">#define BUZZ_ACTIVE_LEVEL LOW</span></span>
 <span class="code-line" data-line="40"></span>
@@ -66,423 +66,453 @@
 <span class="code-line" data-line="66"><span class="tok-directive">#define BUZZ_FAST_MS       100UL</span></span>
 <span class="code-line" data-line="67"><span class="tok-directive">#define BUZZ_ON_MS          35UL</span></span>
 <span class="code-line" data-line="68"></span>
-<span class="code-line" data-line="69"><span class="tok-comment">// 設定ミスをコンパイル時に検出する。</span></span>
-<span class="code-line" data-line="70"><span class="tok-keyword">static_assert</span>(speedPinR == <span class="tok-number">5</span> &amp;&amp; speedPinL == <span class="tok-number">6</span>,</span>
-<span class="code-line" data-line="71">              <span class="tok-string">&quot;UNO motor PWM must use D5/D6 with Servo and IRremote&quot;</span>);</span>
-<span class="code-line" data-line="72"><span class="tok-keyword">static_assert</span>(Echo_PIN != LFSensor_bl &amp;&amp; Echo_PIN != LFSensor_br,</span>
-<span class="code-line" data-line="73">              <span class="tok-string">&quot;Echo and rear sensor pins must be different&quot;</span>);</span>
-<span class="code-line" data-line="74"><span class="tok-keyword">static_assert</span>(REVERSE_DISTANCE_CM &gt; <span class="tok-number">0</span> &amp;&amp;</span>
-<span class="code-line" data-line="75">              WARNING_DISTANCE_CM &gt; REVERSE_DISTANCE_CM &amp;&amp;</span>
-<span class="code-line" data-line="76">              RELEASE_DISTANCE_CM &gt;= WARNING_DISTANCE_CM,</span>
-<span class="code-line" data-line="77">              <span class="tok-string">&quot;Invalid distance thresholds&quot;</span>);</span>
-<span class="code-line" data-line="78"><span class="tok-keyword">static_assert</span>(BUZZ_ON_MS &lt; BUZZ_FAST_MS &amp;&amp; BUZZ_FAST_MS &lt;= BUZZ_SLOW_MS,</span>
-<span class="code-line" data-line="79">              <span class="tok-string">&quot;Invalid buzzer timing&quot;</span>);</span>
-<span class="code-line" data-line="80"><span class="tok-keyword">static_assert</span>(HOLD_TIMEOUT_MS &gt; <span class="tok-number">0</span> &amp;&amp; HOLD_TIMEOUT_MS &lt; 0x80000000UL,</span>
-<span class="code-line" data-line="81">              <span class="tok-string">&quot;Invalid hold timeout&quot;</span>);</span>
-<span class="code-line" data-line="82"><span class="tok-keyword">static_assert</span>(ADVANCE_SPEED &gt;= <span class="tok-number">0</span> &amp;&amp; ADVANCE_SPEED &lt;= <span class="tok-number">255</span> &amp;&amp;</span>
-<span class="code-line" data-line="83">              BACK_SPEED &gt;= <span class="tok-number">0</span> &amp;&amp; BACK_SPEED &lt;= <span class="tok-number">255</span> &amp;&amp;</span>
-<span class="code-line" data-line="84">              TURN_SPEED &gt;= <span class="tok-number">0</span> &amp;&amp; TURN_SPEED &lt;= <span class="tok-number">255</span> &amp;&amp;</span>
-<span class="code-line" data-line="85">              <span class="tok-constant">AVOID_SPEED</span> &gt;= <span class="tok-number">0</span> &amp;&amp; <span class="tok-constant">AVOID_SPEED</span> &lt;= <span class="tok-number">255</span>,</span>
-<span class="code-line" data-line="86">              <span class="tok-string">&quot;PWM speed must be 0..255&quot;</span>);</span>
-<span class="code-line" data-line="87"></span>
-<span class="code-line" data-line="88"><span class="tok-comment">// ============================================================================</span></span>
-<span class="code-line" data-line="89"><span class="tok-comment">// 4. 車両の状態</span></span>
-<span class="code-line" data-line="90"><span class="tok-comment">// ============================================================================</span></span>
-<span class="code-line" data-line="91"><span class="tok-keyword">enum</span> <span class="tok-constant">DN</span> {</span>
-<span class="code-line" data-line="92">  <span class="tok-constant">GO_ADVANCE</span>,</span>
-<span class="code-line" data-line="93">  <span class="tok-constant">GO_BACK</span>,</span>
-<span class="code-line" data-line="94">  <span class="tok-constant">GO_RIGHT</span>,</span>
-<span class="code-line" data-line="95">  <span class="tok-constant">GO_LEFT</span>,</span>
-<span class="code-line" data-line="96">  <span class="tok-constant">STOP_STOP</span></span>
-<span class="code-line" data-line="97">};</span>
-<span class="code-line" data-line="98"></span>
-<span class="code-line" data-line="99"><span class="tok-keyword">enum</span> AvoidMode {</span>
-<span class="code-line" data-line="100">  <span class="tok-constant">AVOID_NONE</span>,</span>
-<span class="code-line" data-line="101">  <span class="tok-constant">AVOID_FRONT</span>,</span>
-<span class="code-line" data-line="102">  <span class="tok-constant">AVOID_REAR</span></span>
-<span class="code-line" data-line="103">};</span>
-<span class="code-line" data-line="104"></span>
-<span class="code-line" data-line="105">Servo headServo;</span>
-<span class="code-line" data-line="106"><span class="tok-constant">DN</span> Remote_Num = <span class="tok-constant">STOP_STOP</span>;       <span class="tok-comment">// リモコンからの指令</span></span>
-<span class="code-line" data-line="107"><span class="tok-constant">DN</span> Drive_Num = <span class="tok-constant">STOP_STOP</span>;        <span class="tok-comment">// 最終的に実行する動作</span></span>
-<span class="code-line" data-line="108">AvoidMode avoidMode = <span class="tok-constant">AVOID_NONE</span>;</span>
-<span class="code-line" data-line="109"><span class="tok-keyword">int</span> DriveSpeed = <span class="tok-number">0</span>;</span>
-<span class="code-line" data-line="110"></span>
-<span class="code-line" data-line="111"><span class="tok-comment">// センサーの状態</span></span>
-<span class="code-line" data-line="112"><span class="tok-keyword">float</span> distanceCm = -<span class="tok-number">1.0f</span>;</span>
-<span class="code-line" data-line="113"><span class="tok-keyword">bool</span> distanceValid = <span class="tok-constant">false</span>;</span>
-<span class="code-line" data-line="114"><span class="tok-keyword">bool</span> sensorSampled = <span class="tok-constant">false</span>;</span>
-<span class="code-line" data-line="115"><span class="tok-keyword">int</span> front = <span class="tok-number">0</span>;</span>
-<span class="code-line" data-line="116"><span class="tok-keyword">int</span> back = <span class="tok-number">0</span>;</span>
-<span class="code-line" data-line="117"><span class="tok-keyword">uint32_t</span> sensorAt = <span class="tok-number">0</span>;</span>
-<span class="code-line" data-line="118"><span class="tok-keyword">uint32_t</span> avoidStarted = <span class="tok-number">0</span>;</span>
-<span class="code-line" data-line="119"></span>
-<span class="code-line" data-line="120"><span class="tok-comment">// 長押しの状態。同じリモコンの有効な繰り返し信号だけで延長する。</span></span>
-<span class="code-line" data-line="121"><span class="tok-keyword">bool</span> holdActive = <span class="tok-constant">false</span>;</span>
-<span class="code-line" data-line="122"><span class="tok-keyword">uint32_t</span> lastRemoteAt = <span class="tok-number">0</span>;</span>
-<span class="code-line" data-line="123"><span class="tok-keyword">uint16_t</span> lastRemoteCommand = <span class="tok-number">0</span>;</span>
-<span class="code-line" data-line="124"><span class="tok-keyword">uint16_t</span> lastRemoteAddress = <span class="tok-number">0</span>;</span>
-<span class="code-line" data-line="125"><span class="tok-keyword">decode_type_t</span> lastRemoteProtocol = <span class="tok-constant">UNKNOWN</span>;</span>
-<span class="code-line" data-line="126"></span>
-<span class="code-line" data-line="127"><span class="tok-comment">// ブザーとモーター切り替えの状態</span></span>
-<span class="code-line" data-line="128"><span class="tok-keyword">bool</span> buzzerRunning = <span class="tok-constant">false</span>;</span>
-<span class="code-line" data-line="129"><span class="tok-keyword">uint32_t</span> buzzerCycleAt = <span class="tok-number">0</span>;</span>
-<span class="code-line" data-line="130"><span class="tok-keyword">int</span> appliedRight = <span class="tok-number">0</span>;</span>
-<span class="code-line" data-line="131"><span class="tok-keyword">int</span> appliedLeft = <span class="tok-number">0</span>;</span>
-<span class="code-line" data-line="132"><span class="tok-keyword">bool</span> directionWaiting = <span class="tok-constant">false</span>;</span>
-<span class="code-line" data-line="133"><span class="tok-keyword">uint32_t</span> directionStoppedAt = <span class="tok-number">0</span>;</span>
+<span class="code-line" data-line="69"><span class="tok-directive">#define SERVO_CENTER_US   1500UL  // 正面付近。実機に合わせて微調整</span></span>
+<span class="code-line" data-line="70"><span class="tok-directive">#define SERVO_PERIOD_US  20000UL  // 目標周期20ms（他処理により延びる）</span></span>
+<span class="code-line" data-line="71"></span>
+<span class="code-line" data-line="72"><span class="tok-comment">// 設定ミスをコンパイル時に検出する。</span></span>
+<span class="code-line" data-line="73"><span class="tok-keyword">static_assert</span>(speedPinR == <span class="tok-number">9</span> &amp;&amp; speedPinL == <span class="tok-number">6</span> &amp;&amp; SERVO_PIN == <span class="tok-number">5</span>,</span>
+<span class="code-line" data-line="74">              <span class="tok-string">&quot;Keep the original code.txt motor and servo pins&quot;</span>);</span>
+<span class="code-line" data-line="75"><span class="tok-keyword">static_assert</span>(SERVO_CENTER_US &gt;= <span class="tok-number">500</span> &amp;&amp; SERVO_CENTER_US &lt;= <span class="tok-number">2500</span> &amp;&amp;</span>
+<span class="code-line" data-line="76">              SERVO_PERIOD_US &gt; SERVO_CENTER_US, <span class="tok-string">&quot;Invalid servo pulse setting&quot;</span>);</span>
+<span class="code-line" data-line="77"><span class="tok-keyword">static_assert</span>(Echo_PIN != LFSensor_bl &amp;&amp; Echo_PIN != LFSensor_br,</span>
+<span class="code-line" data-line="78">              <span class="tok-string">&quot;Echo and rear sensor pins must be different&quot;</span>);</span>
+<span class="code-line" data-line="79"><span class="tok-keyword">static_assert</span>(REVERSE_DISTANCE_CM &gt; <span class="tok-number">0</span> &amp;&amp;</span>
+<span class="code-line" data-line="80">              WARNING_DISTANCE_CM &gt; REVERSE_DISTANCE_CM &amp;&amp;</span>
+<span class="code-line" data-line="81">              RELEASE_DISTANCE_CM &gt;= WARNING_DISTANCE_CM,</span>
+<span class="code-line" data-line="82">              <span class="tok-string">&quot;Invalid distance thresholds&quot;</span>);</span>
+<span class="code-line" data-line="83"><span class="tok-keyword">static_assert</span>(BUZZ_ON_MS &lt; BUZZ_FAST_MS &amp;&amp; BUZZ_FAST_MS &lt;= BUZZ_SLOW_MS,</span>
+<span class="code-line" data-line="84">              <span class="tok-string">&quot;Invalid buzzer timing&quot;</span>);</span>
+<span class="code-line" data-line="85"><span class="tok-keyword">static_assert</span>(HOLD_TIMEOUT_MS &gt; <span class="tok-number">0</span> &amp;&amp; HOLD_TIMEOUT_MS &lt; 0x80000000UL,</span>
+<span class="code-line" data-line="86">              <span class="tok-string">&quot;Invalid hold timeout&quot;</span>);</span>
+<span class="code-line" data-line="87"><span class="tok-keyword">static_assert</span>(ADVANCE_SPEED &gt;= <span class="tok-number">0</span> &amp;&amp; ADVANCE_SPEED &lt;= <span class="tok-number">255</span> &amp;&amp;</span>
+<span class="code-line" data-line="88">              BACK_SPEED &gt;= <span class="tok-number">0</span> &amp;&amp; BACK_SPEED &lt;= <span class="tok-number">255</span> &amp;&amp;</span>
+<span class="code-line" data-line="89">              TURN_SPEED &gt;= <span class="tok-number">0</span> &amp;&amp; TURN_SPEED &lt;= <span class="tok-number">255</span> &amp;&amp;</span>
+<span class="code-line" data-line="90">              <span class="tok-constant">AVOID_SPEED</span> &gt;= <span class="tok-number">0</span> &amp;&amp; <span class="tok-constant">AVOID_SPEED</span> &lt;= <span class="tok-number">255</span>,</span>
+<span class="code-line" data-line="91">              <span class="tok-string">&quot;PWM speed must be 0..255&quot;</span>);</span>
+<span class="code-line" data-line="92"></span>
+<span class="code-line" data-line="93"><span class="tok-comment">// ============================================================================</span></span>
+<span class="code-line" data-line="94"><span class="tok-comment">// 4. 車両の状態</span></span>
+<span class="code-line" data-line="95"><span class="tok-comment">// ============================================================================</span></span>
+<span class="code-line" data-line="96"><span class="tok-keyword">enum</span> <span class="tok-constant">DN</span> {</span>
+<span class="code-line" data-line="97">  <span class="tok-constant">GO_ADVANCE</span>,</span>
+<span class="code-line" data-line="98">  <span class="tok-constant">GO_BACK</span>,</span>
+<span class="code-line" data-line="99">  <span class="tok-constant">GO_RIGHT</span>,</span>
+<span class="code-line" data-line="100">  <span class="tok-constant">GO_LEFT</span>,</span>
+<span class="code-line" data-line="101">  <span class="tok-constant">STOP_STOP</span></span>
+<span class="code-line" data-line="102">};</span>
+<span class="code-line" data-line="103"></span>
+<span class="code-line" data-line="104"><span class="tok-keyword">enum</span> AvoidMode {</span>
+<span class="code-line" data-line="105">  <span class="tok-constant">AVOID_NONE</span>,</span>
+<span class="code-line" data-line="106">  <span class="tok-constant">AVOID_FRONT</span>,</span>
+<span class="code-line" data-line="107">  <span class="tok-constant">AVOID_REAR</span></span>
+<span class="code-line" data-line="108">};</span>
+<span class="code-line" data-line="109"></span>
+<span class="code-line" data-line="110"><span class="tok-constant">DN</span> Remote_Num = <span class="tok-constant">STOP_STOP</span>;       <span class="tok-comment">// リモコンからの指令</span></span>
+<span class="code-line" data-line="111"><span class="tok-constant">DN</span> Drive_Num = <span class="tok-constant">STOP_STOP</span>;        <span class="tok-comment">// 最終的に実行する動作</span></span>
+<span class="code-line" data-line="112">AvoidMode avoidMode = <span class="tok-constant">AVOID_NONE</span>;</span>
+<span class="code-line" data-line="113"><span class="tok-keyword">int</span> DriveSpeed = <span class="tok-number">0</span>;</span>
+<span class="code-line" data-line="114"></span>
+<span class="code-line" data-line="115"><span class="tok-comment">// センサーの状態</span></span>
+<span class="code-line" data-line="116"><span class="tok-keyword">float</span> distanceCm = -<span class="tok-number">1.0f</span>;</span>
+<span class="code-line" data-line="117"><span class="tok-keyword">bool</span> distanceValid = <span class="tok-constant">false</span>;</span>
+<span class="code-line" data-line="118"><span class="tok-keyword">bool</span> sensorSampled = <span class="tok-constant">false</span>;</span>
+<span class="code-line" data-line="119"><span class="tok-keyword">int</span> front = <span class="tok-number">0</span>;</span>
+<span class="code-line" data-line="120"><span class="tok-keyword">int</span> back = <span class="tok-number">0</span>;</span>
+<span class="code-line" data-line="121"><span class="tok-keyword">uint32_t</span> sensorAt = <span class="tok-number">0</span>;</span>
+<span class="code-line" data-line="122"><span class="tok-keyword">uint32_t</span> avoidStarted = <span class="tok-number">0</span>;</span>
+<span class="code-line" data-line="123"></span>
+<span class="code-line" data-line="124"><span class="tok-comment">// 長押しの状態。同じリモコンの有効な繰り返し信号だけで延長する。</span></span>
+<span class="code-line" data-line="125"><span class="tok-keyword">bool</span> holdActive = <span class="tok-constant">false</span>;</span>
+<span class="code-line" data-line="126"><span class="tok-keyword">uint32_t</span> lastRemoteAt = <span class="tok-number">0</span>;</span>
+<span class="code-line" data-line="127"><span class="tok-keyword">uint16_t</span> lastRemoteCommand = <span class="tok-number">0</span>;</span>
+<span class="code-line" data-line="128"><span class="tok-keyword">uint16_t</span> lastRemoteAddress = <span class="tok-number">0</span>;</span>
+<span class="code-line" data-line="129"><span class="tok-keyword">decode_type_t</span> lastRemoteProtocol = <span class="tok-constant">UNKNOWN</span>;</span>
+<span class="code-line" data-line="130"></span>
+<span class="code-line" data-line="131"><span class="tok-comment">// サーボのソフトウェアパルス（Timer1を使用しない）</span></span>
+<span class="code-line" data-line="132"><span class="tok-keyword">bool</span> servoStarted = <span class="tok-constant">false</span>;</span>
+<span class="code-line" data-line="133"><span class="tok-keyword">uint32_t</span> lastServoAt = <span class="tok-number">0</span>;</span>
 <span class="code-line" data-line="134"></span>
-<span class="code-line" data-line="135"><span class="tok-comment">// ============================================================================</span></span>
-<span class="code-line" data-line="136"><span class="tok-comment">// 5. モーターの基本操作</span></span>
-<span class="code-line" data-line="137"><span class="tok-comment">// ============================================================================</span></span>
-<span class="code-line" data-line="138"><span class="tok-keyword">void</span> setMotors(<span class="tok-keyword">int</span> rightSpeed, <span class="tok-keyword">int</span> leftSpeed) {</span>
-<span class="code-line" data-line="139">  digitalWrite(RightDirectPin1, rightSpeed &gt; <span class="tok-number">0</span> ? <span class="tok-constant">HIGH</span> : <span class="tok-constant">LOW</span>);</span>
-<span class="code-line" data-line="140">  digitalWrite(RightDirectPin2, rightSpeed &lt; <span class="tok-number">0</span> ? <span class="tok-constant">HIGH</span> : <span class="tok-constant">LOW</span>);</span>
-<span class="code-line" data-line="141">  digitalWrite(LeftDirectPin1, leftSpeed &gt; <span class="tok-number">0</span> ? <span class="tok-constant">HIGH</span> : <span class="tok-constant">LOW</span>);</span>
-<span class="code-line" data-line="142">  digitalWrite(LeftDirectPin2, leftSpeed &lt; <span class="tok-number">0</span> ? <span class="tok-constant">HIGH</span> : <span class="tok-constant">LOW</span>);</span>
-<span class="code-line" data-line="143"></span>
-<span class="code-line" data-line="144">  analogWrite(speedPinR, rightSpeed &lt; <span class="tok-number">0</span> ? -rightSpeed : rightSpeed);</span>
-<span class="code-line" data-line="145">  analogWrite(speedPinL, leftSpeed &lt; <span class="tok-number">0</span> ? -leftSpeed : leftSpeed);</span>
-<span class="code-line" data-line="146"></span>
-<span class="code-line" data-line="147">  appliedRight = rightSpeed;</span>
-<span class="code-line" data-line="148">  appliedLeft = leftSpeed;</span>
-<span class="code-line" data-line="149">}</span>
-<span class="code-line" data-line="150"></span>
-<span class="code-line" data-line="151"><span class="tok-keyword">void</span> go_Advance() {</span>
-<span class="code-line" data-line="152">  setMotors(DriveSpeed, DriveSpeed);</span>
-<span class="code-line" data-line="153">}</span>
+<span class="code-line" data-line="135"><span class="tok-comment">// ブザーとモーター切り替えの状態</span></span>
+<span class="code-line" data-line="136"><span class="tok-keyword">bool</span> buzzerRunning = <span class="tok-constant">false</span>;</span>
+<span class="code-line" data-line="137"><span class="tok-keyword">uint32_t</span> buzzerCycleAt = <span class="tok-number">0</span>;</span>
+<span class="code-line" data-line="138"><span class="tok-keyword">int</span> appliedRight = <span class="tok-number">0</span>;</span>
+<span class="code-line" data-line="139"><span class="tok-keyword">int</span> appliedLeft = <span class="tok-number">0</span>;</span>
+<span class="code-line" data-line="140"><span class="tok-keyword">bool</span> directionWaiting = <span class="tok-constant">false</span>;</span>
+<span class="code-line" data-line="141"><span class="tok-keyword">uint32_t</span> directionStoppedAt = <span class="tok-number">0</span>;</span>
+<span class="code-line" data-line="142"></span>
+<span class="code-line" data-line="143"><span class="tok-comment">// ============================================================================</span></span>
+<span class="code-line" data-line="144"><span class="tok-comment">// 5. モーターの基本操作</span></span>
+<span class="code-line" data-line="145"><span class="tok-comment">// ============================================================================</span></span>
+<span class="code-line" data-line="146"><span class="tok-keyword">void</span> setMotors(<span class="tok-keyword">int</span> rightSpeed, <span class="tok-keyword">int</span> leftSpeed) {</span>
+<span class="code-line" data-line="147">  digitalWrite(RightDirectPin1, rightSpeed &gt; <span class="tok-number">0</span> ? <span class="tok-constant">HIGH</span> : <span class="tok-constant">LOW</span>);</span>
+<span class="code-line" data-line="148">  digitalWrite(RightDirectPin2, rightSpeed &lt; <span class="tok-number">0</span> ? <span class="tok-constant">HIGH</span> : <span class="tok-constant">LOW</span>);</span>
+<span class="code-line" data-line="149">  digitalWrite(LeftDirectPin1, leftSpeed &gt; <span class="tok-number">0</span> ? <span class="tok-constant">HIGH</span> : <span class="tok-constant">LOW</span>);</span>
+<span class="code-line" data-line="150">  digitalWrite(LeftDirectPin2, leftSpeed &lt; <span class="tok-number">0</span> ? <span class="tok-constant">HIGH</span> : <span class="tok-constant">LOW</span>);</span>
+<span class="code-line" data-line="151"></span>
+<span class="code-line" data-line="152">  analogWrite(speedPinR, rightSpeed &lt; <span class="tok-number">0</span> ? -rightSpeed : rightSpeed);</span>
+<span class="code-line" data-line="153">  analogWrite(speedPinL, leftSpeed &lt; <span class="tok-number">0</span> ? -leftSpeed : leftSpeed);</span>
 <span class="code-line" data-line="154"></span>
-<span class="code-line" data-line="155"><span class="tok-keyword">void</span> go_Back() {</span>
-<span class="code-line" data-line="156">  setMotors(-DriveSpeed, -DriveSpeed);</span>
+<span class="code-line" data-line="155">  appliedRight = rightSpeed;</span>
+<span class="code-line" data-line="156">  appliedLeft = leftSpeed;</span>
 <span class="code-line" data-line="157">}</span>
 <span class="code-line" data-line="158"></span>
-<span class="code-line" data-line="159"><span class="tok-keyword">void</span> go_Right() {</span>
-<span class="code-line" data-line="160">  setMotors(-DriveSpeed, DriveSpeed);</span>
+<span class="code-line" data-line="159"><span class="tok-keyword">void</span> go_Advance() {</span>
+<span class="code-line" data-line="160">  setMotors(DriveSpeed, DriveSpeed);</span>
 <span class="code-line" data-line="161">}</span>
 <span class="code-line" data-line="162"></span>
-<span class="code-line" data-line="163"><span class="tok-keyword">void</span> go_Left() {</span>
-<span class="code-line" data-line="164">  setMotors(DriveSpeed, -DriveSpeed);</span>
+<span class="code-line" data-line="163"><span class="tok-keyword">void</span> go_Back() {</span>
+<span class="code-line" data-line="164">  setMotors(-DriveSpeed, -DriveSpeed);</span>
 <span class="code-line" data-line="165">}</span>
 <span class="code-line" data-line="166"></span>
-<span class="code-line" data-line="167"><span class="tok-keyword">void</span> stop_Stop() {</span>
-<span class="code-line" data-line="168">  analogWrite(speedPinR, <span class="tok-number">0</span>);</span>
-<span class="code-line" data-line="169">  analogWrite(speedPinL, <span class="tok-number">0</span>);</span>
+<span class="code-line" data-line="167"><span class="tok-keyword">void</span> go_Right() {</span>
+<span class="code-line" data-line="168">  setMotors(-DriveSpeed, DriveSpeed);</span>
+<span class="code-line" data-line="169">}</span>
 <span class="code-line" data-line="170"></span>
-<span class="code-line" data-line="171">  digitalWrite(RightDirectPin1, <span class="tok-constant">LOW</span>);</span>
-<span class="code-line" data-line="172">  digitalWrite(RightDirectPin2, <span class="tok-constant">LOW</span>);</span>
-<span class="code-line" data-line="173">  digitalWrite(LeftDirectPin1, <span class="tok-constant">LOW</span>);</span>
-<span class="code-line" data-line="174">  digitalWrite(LeftDirectPin2, <span class="tok-constant">LOW</span>);</span>
-<span class="code-line" data-line="175"></span>
-<span class="code-line" data-line="176">  appliedRight = <span class="tok-number">0</span>;</span>
-<span class="code-line" data-line="177">  appliedLeft = <span class="tok-number">0</span>;</span>
-<span class="code-line" data-line="178">}</span>
-<span class="code-line" data-line="179"></span>
-<span class="code-line" data-line="180"><span class="tok-keyword">void</span> resetToStop() {</span>
-<span class="code-line" data-line="181">  Remote_Num = <span class="tok-constant">STOP_STOP</span>;</span>
-<span class="code-line" data-line="182">  Drive_Num = <span class="tok-constant">STOP_STOP</span>;</span>
-<span class="code-line" data-line="183">  DriveSpeed = <span class="tok-number">0</span>;</span>
-<span class="code-line" data-line="184">  avoidMode = <span class="tok-constant">AVOID_NONE</span>;</span>
-<span class="code-line" data-line="185">  holdActive = <span class="tok-constant">false</span>;</span>
+<span class="code-line" data-line="171"><span class="tok-keyword">void</span> go_Left() {</span>
+<span class="code-line" data-line="172">  setMotors(DriveSpeed, -DriveSpeed);</span>
+<span class="code-line" data-line="173">}</span>
+<span class="code-line" data-line="174"></span>
+<span class="code-line" data-line="175"><span class="tok-keyword">void</span> stop_Stop() {</span>
+<span class="code-line" data-line="176">  analogWrite(speedPinR, <span class="tok-number">0</span>);</span>
+<span class="code-line" data-line="177">  analogWrite(speedPinL, <span class="tok-number">0</span>);</span>
+<span class="code-line" data-line="178"></span>
+<span class="code-line" data-line="179">  digitalWrite(RightDirectPin1, <span class="tok-constant">LOW</span>);</span>
+<span class="code-line" data-line="180">  digitalWrite(RightDirectPin2, <span class="tok-constant">LOW</span>);</span>
+<span class="code-line" data-line="181">  digitalWrite(LeftDirectPin1, <span class="tok-constant">LOW</span>);</span>
+<span class="code-line" data-line="182">  digitalWrite(LeftDirectPin2, <span class="tok-constant">LOW</span>);</span>
+<span class="code-line" data-line="183"></span>
+<span class="code-line" data-line="184">  appliedRight = <span class="tok-number">0</span>;</span>
+<span class="code-line" data-line="185">  appliedLeft = <span class="tok-number">0</span>;</span>
 <span class="code-line" data-line="186">}</span>
 <span class="code-line" data-line="187"></span>
-<span class="code-line" data-line="188"><span class="tok-comment">// ============================================================================</span></span>
-<span class="code-line" data-line="189"><span class="tok-comment">// 6. 長押しリモコン操作</span></span>
-<span class="code-line" data-line="190"><span class="tok-comment">// ============================================================================</span></span>
-<span class="code-line" data-line="191"><span class="tok-comment">// 赤外線リモコンは「離した」という信号を送らないため、受信間隔で判断する。</span></span>
-<span class="code-line" data-line="192"><span class="tok-keyword">void</span> updateRemoteHold() {</span>
-<span class="code-line" data-line="193">  <span class="tok-keyword">if</span> (!holdActive) {</span>
-<span class="code-line" data-line="194">    <span class="tok-keyword">return</span>;</span>
-<span class="code-line" data-line="195">  }</span>
-<span class="code-line" data-line="196"></span>
-<span class="code-line" data-line="197">  <span class="tok-keyword">const</span> <span class="tok-keyword">uint32_t</span> elapsed = <span class="tok-keyword">uint32_t</span>(millis() - lastRemoteAt);</span>
-<span class="code-line" data-line="198">  <span class="tok-keyword">if</span> (elapsed &gt;= HOLD_TIMEOUT_MS) {</span>
-<span class="code-line" data-line="199">    resetToStop();</span>
-<span class="code-line" data-line="200">  }</span>
-<span class="code-line" data-line="201">}</span>
-<span class="code-line" data-line="202"></span>
-<span class="code-line" data-line="203"><span class="tok-constant">DN</span> decodeRemoteDirection(<span class="tok-keyword">uint16_t</span> command) {</span>
-<span class="code-line" data-line="204">  <span class="tok-keyword">switch</span> (command) {</span>
-<span class="code-line" data-line="205">    <span class="tok-keyword">case</span> IR_ADVANCE: <span class="tok-keyword">return</span> <span class="tok-constant">GO_ADVANCE</span>;</span>
-<span class="code-line" data-line="206">    <span class="tok-keyword">case</span> IR_BACK:    <span class="tok-keyword">return</span> <span class="tok-constant">GO_BACK</span>;</span>
-<span class="code-line" data-line="207">    <span class="tok-keyword">case</span> IR_RIGHT:   <span class="tok-keyword">return</span> <span class="tok-constant">GO_RIGHT</span>;</span>
-<span class="code-line" data-line="208">    <span class="tok-keyword">case</span> IR_LEFT:    <span class="tok-keyword">return</span> <span class="tok-constant">GO_LEFT</span>;</span>
-<span class="code-line" data-line="209">    <span class="tok-keyword">default</span>:         <span class="tok-keyword">return</span> <span class="tok-constant">STOP_STOP</span>;</span>
-<span class="code-line" data-line="210">  }</span>
-<span class="code-line" data-line="211">}</span>
-<span class="code-line" data-line="212"></span>
-<span class="code-line" data-line="213"><span class="tok-keyword">bool</span> isSameRemote(<span class="tok-keyword">uint16_t</span> address, <span class="tok-keyword">decode_type_t</span> protocol) {</span>
-<span class="code-line" data-line="214"><span class="tok-comment">  // NECの長押しがNEC2として報告される場合も、同じ通信方式として扱う。</span></span>
-<span class="code-line" data-line="215">  <span class="tok-keyword">const</span> <span class="tok-keyword">bool</span> currentIsNEC = protocol == <span class="tok-constant">NEC</span> || protocol == <span class="tok-constant">NEC2</span>;</span>
-<span class="code-line" data-line="216">  <span class="tok-keyword">const</span> <span class="tok-keyword">bool</span> previousIsNEC = lastRemoteProtocol == <span class="tok-constant">NEC</span> || lastRemoteProtocol == <span class="tok-constant">NEC2</span>;</span>
-<span class="code-line" data-line="217">  <span class="tok-keyword">const</span> <span class="tok-keyword">bool</span> sameProtocol = protocol == lastRemoteProtocol ||</span>
-<span class="code-line" data-line="218">                            (currentIsNEC &amp;&amp; previousIsNEC);</span>
-<span class="code-line" data-line="219">  <span class="tok-keyword">return</span> address == lastRemoteAddress &amp;&amp; sameProtocol;</span>
-<span class="code-line" data-line="220">}</span>
-<span class="code-line" data-line="221"></span>
-<span class="code-line" data-line="222"><span class="tok-keyword">void</span> do_IR_Tick() {</span>
-<span class="code-line" data-line="223"><span class="tok-comment">  // 古いリピート信号で停止状態を復活させないよう、受信より先に期限を見る。</span></span>
-<span class="code-line" data-line="224">  updateRemoteHold();</span>
-<span class="code-line" data-line="225">  <span class="tok-keyword">if</span> (!IrReceiver.decode()) {</span>
-<span class="code-line" data-line="226">    <span class="tok-keyword">return</span>;</span>
-<span class="code-line" data-line="227">  }</span>
-<span class="code-line" data-line="228"></span>
-<span class="code-line" data-line="229">  <span class="tok-keyword">const</span> <span class="tok-keyword">uint8_t</span> flags = IrReceiver.decodedIRData.flags;</span>
-<span class="code-line" data-line="230">  <span class="tok-keyword">const</span> <span class="tok-keyword">uint16_t</span> command = IrReceiver.decodedIRData.command;</span>
-<span class="code-line" data-line="231">  <span class="tok-keyword">const</span> <span class="tok-keyword">uint16_t</span> address = IrReceiver.decodedIRData.address;</span>
-<span class="code-line" data-line="232">  <span class="tok-keyword">const</span> <span class="tok-keyword">decode_type_t</span> protocol = IrReceiver.decodedIRData.protocol;</span>
-<span class="code-line" data-line="233">  IrReceiver.resume();</span>
-<span class="code-line" data-line="234"></span>
-<span class="code-line" data-line="235">  <span class="tok-keyword">if</span> ((flags &amp; IRDATA_FLAGS_WAS_OVERFLOW) ||</span>
-<span class="code-line" data-line="236">      (flags &amp; IRDATA_FLAGS_PARITY_FAILED) || protocol == <span class="tok-constant">UNKNOWN</span>) {</span>
-<span class="code-line" data-line="237">    resetToStop();</span>
-<span class="code-line" data-line="238">    <span class="tok-keyword">return</span>;</span>
-<span class="code-line" data-line="239">  }</span>
-<span class="code-line" data-line="240"></span>
-<span class="code-line" data-line="241">  <span class="tok-keyword">if</span> (command == IR_STOP) {</span>
-<span class="code-line" data-line="242">    resetToStop();</span>
-<span class="code-line" data-line="243">    <span class="tok-keyword">return</span>;</span>
-<span class="code-line" data-line="244">  }</span>
-<span class="code-line" data-line="245"></span>
-<span class="code-line" data-line="246">  <span class="tok-keyword">if</span> (flags &amp; IRDATA_FLAGS_IS_REPEAT) {</span>
-<span class="code-line" data-line="247"><span class="tok-comment">    // 長押し中の同じ方向・同じ送信元・期限内の信号だけを受け付ける。</span></span>
-<span class="code-line" data-line="248">    <span class="tok-keyword">if</span> (holdActive &amp;&amp; command == lastRemoteCommand &amp;&amp;</span>
-<span class="code-line" data-line="249">        isSameRemote(address, protocol)) {</span>
-<span class="code-line" data-line="250">      lastRemoteAt = millis();</span>
-<span class="code-line" data-line="251">    }</span>
-<span class="code-line" data-line="252">    <span class="tok-keyword">return</span>;</span>
-<span class="code-line" data-line="253">  }</span>
-<span class="code-line" data-line="254"></span>
-<span class="code-line" data-line="255">  <span class="tok-keyword">const</span> <span class="tok-constant">DN</span> requested = decodeRemoteDirection(command);</span>
-<span class="code-line" data-line="256">  <span class="tok-keyword">if</span> (requested == <span class="tok-constant">STOP_STOP</span>) {</span>
-<span class="code-line" data-line="257">    <span class="tok-keyword">return</span>;  <span class="tok-comment">// 未使用ボタンでは走行時間を延長しない</span></span>
-<span class="code-line" data-line="258">  }</span>
-<span class="code-line" data-line="259"></span>
-<span class="code-line" data-line="260">  Remote_Num = requested;</span>
-<span class="code-line" data-line="261">  holdActive = <span class="tok-constant">true</span>;</span>
-<span class="code-line" data-line="262">  lastRemoteAt = millis();</span>
-<span class="code-line" data-line="263">  lastRemoteCommand = command;</span>
-<span class="code-line" data-line="264">  lastRemoteAddress = address;</span>
-<span class="code-line" data-line="265">  lastRemoteProtocol = protocol;</span>
-<span class="code-line" data-line="266">}</span>
+<span class="code-line" data-line="188"><span class="tok-keyword">void</span> resetToStop() {</span>
+<span class="code-line" data-line="189">  Remote_Num = <span class="tok-constant">STOP_STOP</span>;</span>
+<span class="code-line" data-line="190">  Drive_Num = <span class="tok-constant">STOP_STOP</span>;</span>
+<span class="code-line" data-line="191">  DriveSpeed = <span class="tok-number">0</span>;</span>
+<span class="code-line" data-line="192">  avoidMode = <span class="tok-constant">AVOID_NONE</span>;</span>
+<span class="code-line" data-line="193">  holdActive = <span class="tok-constant">false</span>;</span>
+<span class="code-line" data-line="194">}</span>
+<span class="code-line" data-line="195"></span>
+<span class="code-line" data-line="196"><span class="tok-comment">// ============================================================================</span></span>
+<span class="code-line" data-line="197"><span class="tok-comment">// 6. 長押しリモコン操作</span></span>
+<span class="code-line" data-line="198"><span class="tok-comment">// ============================================================================</span></span>
+<span class="code-line" data-line="199"><span class="tok-comment">// 赤外線リモコンは「離した」という信号を送らないため、受信間隔で判断する。</span></span>
+<span class="code-line" data-line="200"><span class="tok-keyword">void</span> updateRemoteHold() {</span>
+<span class="code-line" data-line="201">  <span class="tok-keyword">if</span> (!holdActive) {</span>
+<span class="code-line" data-line="202">    <span class="tok-keyword">return</span>;</span>
+<span class="code-line" data-line="203">  }</span>
+<span class="code-line" data-line="204"></span>
+<span class="code-line" data-line="205">  <span class="tok-keyword">const</span> <span class="tok-keyword">uint32_t</span> elapsed = <span class="tok-keyword">uint32_t</span>(millis() - lastRemoteAt);</span>
+<span class="code-line" data-line="206">  <span class="tok-keyword">if</span> (elapsed &gt;= HOLD_TIMEOUT_MS) {</span>
+<span class="code-line" data-line="207">    resetToStop();</span>
+<span class="code-line" data-line="208">  }</span>
+<span class="code-line" data-line="209">}</span>
+<span class="code-line" data-line="210"></span>
+<span class="code-line" data-line="211"><span class="tok-constant">DN</span> decodeRemoteDirection(<span class="tok-keyword">uint16_t</span> command) {</span>
+<span class="code-line" data-line="212">  <span class="tok-keyword">switch</span> (command) {</span>
+<span class="code-line" data-line="213">    <span class="tok-keyword">case</span> IR_ADVANCE: <span class="tok-keyword">return</span> <span class="tok-constant">GO_ADVANCE</span>;</span>
+<span class="code-line" data-line="214">    <span class="tok-keyword">case</span> IR_BACK:    <span class="tok-keyword">return</span> <span class="tok-constant">GO_BACK</span>;</span>
+<span class="code-line" data-line="215">    <span class="tok-keyword">case</span> IR_RIGHT:   <span class="tok-keyword">return</span> <span class="tok-constant">GO_RIGHT</span>;</span>
+<span class="code-line" data-line="216">    <span class="tok-keyword">case</span> IR_LEFT:    <span class="tok-keyword">return</span> <span class="tok-constant">GO_LEFT</span>;</span>
+<span class="code-line" data-line="217">    <span class="tok-keyword">default</span>:         <span class="tok-keyword">return</span> <span class="tok-constant">STOP_STOP</span>;</span>
+<span class="code-line" data-line="218">  }</span>
+<span class="code-line" data-line="219">}</span>
+<span class="code-line" data-line="220"></span>
+<span class="code-line" data-line="221"><span class="tok-keyword">bool</span> isSameRemote(<span class="tok-keyword">uint16_t</span> address, <span class="tok-keyword">decode_type_t</span> protocol) {</span>
+<span class="code-line" data-line="222"><span class="tok-comment">  // NECの長押しがNEC2として報告される場合も、同じ通信方式として扱う。</span></span>
+<span class="code-line" data-line="223">  <span class="tok-keyword">const</span> <span class="tok-keyword">bool</span> currentIsNEC = protocol == <span class="tok-constant">NEC</span> || protocol == <span class="tok-constant">NEC2</span>;</span>
+<span class="code-line" data-line="224">  <span class="tok-keyword">const</span> <span class="tok-keyword">bool</span> previousIsNEC = lastRemoteProtocol == <span class="tok-constant">NEC</span> || lastRemoteProtocol == <span class="tok-constant">NEC2</span>;</span>
+<span class="code-line" data-line="225">  <span class="tok-keyword">const</span> <span class="tok-keyword">bool</span> sameProtocol = protocol == lastRemoteProtocol ||</span>
+<span class="code-line" data-line="226">                            (currentIsNEC &amp;&amp; previousIsNEC);</span>
+<span class="code-line" data-line="227">  <span class="tok-keyword">return</span> address == lastRemoteAddress &amp;&amp; sameProtocol;</span>
+<span class="code-line" data-line="228">}</span>
+<span class="code-line" data-line="229"></span>
+<span class="code-line" data-line="230"><span class="tok-keyword">void</span> do_IR_Tick() {</span>
+<span class="code-line" data-line="231"><span class="tok-comment">  // 古いリピート信号で停止状態を復活させないよう、受信より先に期限を見る。</span></span>
+<span class="code-line" data-line="232">  updateRemoteHold();</span>
+<span class="code-line" data-line="233">  <span class="tok-keyword">if</span> (!IrReceiver.decode()) {</span>
+<span class="code-line" data-line="234">    <span class="tok-keyword">return</span>;</span>
+<span class="code-line" data-line="235">  }</span>
+<span class="code-line" data-line="236"></span>
+<span class="code-line" data-line="237">  <span class="tok-keyword">const</span> <span class="tok-keyword">uint8_t</span> flags = IrReceiver.decodedIRData.flags;</span>
+<span class="code-line" data-line="238">  <span class="tok-keyword">const</span> <span class="tok-keyword">uint16_t</span> command = IrReceiver.decodedIRData.command;</span>
+<span class="code-line" data-line="239">  <span class="tok-keyword">const</span> <span class="tok-keyword">uint16_t</span> address = IrReceiver.decodedIRData.address;</span>
+<span class="code-line" data-line="240">  <span class="tok-keyword">const</span> <span class="tok-keyword">decode_type_t</span> protocol = IrReceiver.decodedIRData.protocol;</span>
+<span class="code-line" data-line="241">  IrReceiver.resume();</span>
+<span class="code-line" data-line="242"></span>
+<span class="code-line" data-line="243">  <span class="tok-keyword">if</span> ((flags &amp; IRDATA_FLAGS_WAS_OVERFLOW) ||</span>
+<span class="code-line" data-line="244">      (flags &amp; IRDATA_FLAGS_PARITY_FAILED) || protocol == <span class="tok-constant">UNKNOWN</span>) {</span>
+<span class="code-line" data-line="245">    resetToStop();</span>
+<span class="code-line" data-line="246">    <span class="tok-keyword">return</span>;</span>
+<span class="code-line" data-line="247">  }</span>
+<span class="code-line" data-line="248"></span>
+<span class="code-line" data-line="249">  <span class="tok-keyword">if</span> (command == IR_STOP) {</span>
+<span class="code-line" data-line="250">    resetToStop();</span>
+<span class="code-line" data-line="251">    <span class="tok-keyword">return</span>;</span>
+<span class="code-line" data-line="252">  }</span>
+<span class="code-line" data-line="253"></span>
+<span class="code-line" data-line="254">  <span class="tok-keyword">if</span> (flags &amp; IRDATA_FLAGS_IS_REPEAT) {</span>
+<span class="code-line" data-line="255"><span class="tok-comment">    // 長押し中の同じ方向・同じ送信元・期限内の信号だけを受け付ける。</span></span>
+<span class="code-line" data-line="256">    <span class="tok-keyword">if</span> (holdActive &amp;&amp; command == lastRemoteCommand &amp;&amp;</span>
+<span class="code-line" data-line="257">        isSameRemote(address, protocol)) {</span>
+<span class="code-line" data-line="258">      lastRemoteAt = millis();</span>
+<span class="code-line" data-line="259">    }</span>
+<span class="code-line" data-line="260">    <span class="tok-keyword">return</span>;</span>
+<span class="code-line" data-line="261">  }</span>
+<span class="code-line" data-line="262"></span>
+<span class="code-line" data-line="263">  <span class="tok-keyword">const</span> <span class="tok-constant">DN</span> requested = decodeRemoteDirection(command);</span>
+<span class="code-line" data-line="264">  <span class="tok-keyword">if</span> (requested == <span class="tok-constant">STOP_STOP</span>) {</span>
+<span class="code-line" data-line="265">    <span class="tok-keyword">return</span>;  <span class="tok-comment">// 未使用ボタンでは走行時間を延長しない</span></span>
+<span class="code-line" data-line="266">  }</span>
 <span class="code-line" data-line="267"></span>
-<span class="code-line" data-line="268"><span class="tok-comment">// ============================================================================</span></span>
-<span class="code-line" data-line="269"><span class="tok-comment">// 7. センサー読み取り</span></span>
-<span class="code-line" data-line="270"><span class="tok-comment">// ============================================================================</span></span>
-<span class="code-line" data-line="271"><span class="tok-keyword">float</span> watch() {</span>
-<span class="code-line" data-line="272">  digitalWrite(Trig_PIN, <span class="tok-constant">LOW</span>);</span>
-<span class="code-line" data-line="273">  delayMicroseconds(<span class="tok-number">2</span>);</span>
-<span class="code-line" data-line="274">  digitalWrite(Trig_PIN, <span class="tok-constant">HIGH</span>);</span>
-<span class="code-line" data-line="275">  delayMicroseconds(<span class="tok-number">10</span>);</span>
-<span class="code-line" data-line="276">  digitalWrite(Trig_PIN, <span class="tok-constant">LOW</span>);</span>
-<span class="code-line" data-line="277"></span>
-<span class="code-line" data-line="278">  <span class="tok-keyword">const</span> unsigned long echoTime = pulseIn(Echo_PIN, <span class="tok-constant">HIGH</span>, ECHO_TIMEOUT_US);</span>
-<span class="code-line" data-line="279">  <span class="tok-keyword">if</span> (echoTime == <span class="tok-number">0</span>) {</span>
-<span class="code-line" data-line="280">    <span class="tok-keyword">return</span> -<span class="tok-number">1.0f</span>;</span>
-<span class="code-line" data-line="281">  }</span>
-<span class="code-line" data-line="282">  <span class="tok-keyword">return</span> echoTime * <span class="tok-number">0.01657f</span>;</span>
-<span class="code-line" data-line="283">}</span>
-<span class="code-line" data-line="284"></span>
-<span class="code-line" data-line="285"><span class="tok-keyword">void</span> updateSensors() {</span>
-<span class="code-line" data-line="286">  <span class="tok-keyword">const</span> <span class="tok-keyword">uint32_t</span> now = millis();</span>
-<span class="code-line" data-line="287">  <span class="tok-keyword">if</span> (!sensorSampled || <span class="tok-keyword">uint32_t</span>(now - sensorAt) &gt;= SENSOR_PERIOD_MS) {</span>
-<span class="code-line" data-line="288">    distanceCm = watch();</span>
-<span class="code-line" data-line="289">    distanceValid = distanceCm &gt;= <span class="tok-number">0.0f</span>;</span>
-<span class="code-line" data-line="290">    sensorAt = now;</span>
-<span class="code-line" data-line="291">    sensorSampled = <span class="tok-constant">true</span>;</span>
-<span class="code-line" data-line="292">  }</span>
-<span class="code-line" data-line="293"></span>
-<span class="code-line" data-line="294">  front = distanceValid &amp;&amp; distanceCm &lt;= REVERSE_DISTANCE_CM;</span>
-<span class="code-line" data-line="295">  back = digitalRead(LFSensor_bl) == REAR_ACTIVE_LEVEL ||</span>
-<span class="code-line" data-line="296">         digitalRead(LFSensor_br) == REAR_ACTIVE_LEVEL;</span>
-<span class="code-line" data-line="297">}</span>
-<span class="code-line" data-line="298"></span>
-<span class="code-line" data-line="299"><span class="tok-comment">// ============================================================================</span></span>
-<span class="code-line" data-line="300"><span class="tok-comment">// 8. 障害物回避と手動操作の優先順位</span></span>
-<span class="code-line" data-line="301"><span class="tok-comment">// ============================================================================</span></span>
-<span class="code-line" data-line="302"><span class="tok-keyword">void</span> checkSensorsAndObstacles() {</span>
-<span class="code-line" data-line="303">  updateRemoteHold();</span>
+<span class="code-line" data-line="268">  Remote_Num = requested;</span>
+<span class="code-line" data-line="269">  holdActive = <span class="tok-constant">true</span>;</span>
+<span class="code-line" data-line="270">  lastRemoteAt = millis();</span>
+<span class="code-line" data-line="271">  lastRemoteCommand = command;</span>
+<span class="code-line" data-line="272">  lastRemoteAddress = address;</span>
+<span class="code-line" data-line="273">  lastRemoteProtocol = protocol;</span>
+<span class="code-line" data-line="274">}</span>
+<span class="code-line" data-line="275"></span>
+<span class="code-line" data-line="276"><span class="tok-comment">// D5へ正面保持用のパルスを出す。割り込みは止めないためIR受信を継続できる。</span></span>
+<span class="code-line" data-line="277"><span class="tok-comment">// 約1.5msだけ待機する。microsで経過時間を測り、割り込みの累積遅延を抑える。</span></span>
+<span class="code-line" data-line="278"><span class="tok-keyword">void</span> keepHeadForward() {</span>
+<span class="code-line" data-line="279">  <span class="tok-keyword">const</span> <span class="tok-keyword">uint32_t</span> now = micros();</span>
+<span class="code-line" data-line="280">  <span class="tok-keyword">if</span> (servoStarted &amp;&amp; <span class="tok-keyword">uint32_t</span>(now - lastServoAt) &lt; SERVO_PERIOD_US) {</span>
+<span class="code-line" data-line="281">    <span class="tok-keyword">return</span>;</span>
+<span class="code-line" data-line="282">  }</span>
+<span class="code-line" data-line="283"></span>
+<span class="code-line" data-line="284">  servoStarted = <span class="tok-constant">true</span>;</span>
+<span class="code-line" data-line="285">  lastServoAt = now;</span>
+<span class="code-line" data-line="286">  digitalWrite(SERVO_PIN, <span class="tok-constant">HIGH</span>);</span>
+<span class="code-line" data-line="287"></span>
+<span class="code-line" data-line="288">  <span class="tok-keyword">const</span> <span class="tok-keyword">uint32_t</span> pulseStarted = micros();</span>
+<span class="code-line" data-line="289">  while (<span class="tok-keyword">uint32_t</span>(micros() - pulseStarted) &lt; SERVO_CENTER_US) {</span>
+<span class="code-line" data-line="290"><span class="tok-comment">    // IRremoteとArduinoの時刻管理の割り込みは有効なまま。</span></span>
+<span class="code-line" data-line="291">  }</span>
+<span class="code-line" data-line="292">  digitalWrite(SERVO_PIN, <span class="tok-constant">LOW</span>);</span>
+<span class="code-line" data-line="293">}</span>
+<span class="code-line" data-line="294"></span>
+<span class="code-line" data-line="295"><span class="tok-comment">// ============================================================================</span></span>
+<span class="code-line" data-line="296"><span class="tok-comment">// 7. センサー読み取り</span></span>
+<span class="code-line" data-line="297"><span class="tok-comment">// ============================================================================</span></span>
+<span class="code-line" data-line="298"><span class="tok-keyword">float</span> watch() {</span>
+<span class="code-line" data-line="299">  digitalWrite(Trig_PIN, <span class="tok-constant">LOW</span>);</span>
+<span class="code-line" data-line="300">  delayMicroseconds(<span class="tok-number">2</span>);</span>
+<span class="code-line" data-line="301">  digitalWrite(Trig_PIN, <span class="tok-constant">HIGH</span>);</span>
+<span class="code-line" data-line="302">  delayMicroseconds(<span class="tok-number">10</span>);</span>
+<span class="code-line" data-line="303">  digitalWrite(Trig_PIN, <span class="tok-constant">LOW</span>);</span>
 <span class="code-line" data-line="304"></span>
-<span class="code-line" data-line="305"><span class="tok-comment">  // ボタンを離した場合、回避中でも停止する。</span></span>
-<span class="code-line" data-line="306">  <span class="tok-keyword">if</span> (!holdActive || Remote_Num == <span class="tok-constant">STOP_STOP</span>) {</span>
-<span class="code-line" data-line="307">    resetToStop();</span>
-<span class="code-line" data-line="308">    <span class="tok-keyword">return</span>;</span>
-<span class="code-line" data-line="309">  }</span>
-<span class="code-line" data-line="310"></span>
-<span class="code-line" data-line="311">  <span class="tok-keyword">if</span> (!distanceValid || (front &amp;&amp; back)) {</span>
-<span class="code-line" data-line="312">    resetToStop();</span>
-<span class="code-line" data-line="313">    <span class="tok-keyword">return</span>;</span>
-<span class="code-line" data-line="314">  }</span>
-<span class="code-line" data-line="315"></span>
-<span class="code-line" data-line="316">  <span class="tok-keyword">const</span> <span class="tok-keyword">uint32_t</span> now = millis();</span>
-<span class="code-line" data-line="317">  <span class="tok-keyword">if</span> (avoidMode != <span class="tok-constant">AVOID_NONE</span> &amp;&amp; <span class="tok-keyword">uint32_t</span>(now - avoidStarted) &gt;= AUTO_MAX_MS) {</span>
-<span class="code-line" data-line="318">    resetToStop();</span>
-<span class="code-line" data-line="319">    <span class="tok-keyword">return</span>;</span>
-<span class="code-line" data-line="320">  }</span>
-<span class="code-line" data-line="321"></span>
-<span class="code-line" data-line="322"><span class="tok-comment">  // 前方回避中：後方を監視しながら、15cmより離れるまで後退する。</span></span>
-<span class="code-line" data-line="323">  <span class="tok-keyword">if</span> (avoidMode == <span class="tok-constant">AVOID_FRONT</span>) {</span>
-<span class="code-line" data-line="324">    <span class="tok-keyword">if</span> (back || distanceCm &gt; RELEASE_DISTANCE_CM) {</span>
-<span class="code-line" data-line="325">      resetToStop();</span>
-<span class="code-line" data-line="326">      <span class="tok-keyword">return</span>;</span>
-<span class="code-line" data-line="327">    }</span>
-<span class="code-line" data-line="328">    Drive_Num = <span class="tok-constant">GO_BACK</span>;</span>
-<span class="code-line" data-line="329">    DriveSpeed = <span class="tok-constant">AVOID_SPEED</span>;</span>
-<span class="code-line" data-line="330">    <span class="tok-keyword">return</span>;</span>
-<span class="code-line" data-line="331">  }</span>
-<span class="code-line" data-line="332"></span>
-<span class="code-line" data-line="333"><span class="tok-comment">  // 後方回避中：前方を監視しながら、後方検知がなくなるまで前進する。</span></span>
-<span class="code-line" data-line="334">  <span class="tok-keyword">if</span> (avoidMode == <span class="tok-constant">AVOID_REAR</span>) {</span>
-<span class="code-line" data-line="335">    <span class="tok-keyword">if</span> (front || !back) {</span>
-<span class="code-line" data-line="336">      resetToStop();</span>
-<span class="code-line" data-line="337">      <span class="tok-keyword">return</span>;</span>
-<span class="code-line" data-line="338">    }</span>
-<span class="code-line" data-line="339">    Drive_Num = <span class="tok-constant">GO_ADVANCE</span>;</span>
-<span class="code-line" data-line="340">    DriveSpeed = <span class="tok-constant">AVOID_SPEED</span>;</span>
-<span class="code-line" data-line="341">    <span class="tok-keyword">return</span>;</span>
-<span class="code-line" data-line="342">  }</span>
-<span class="code-line" data-line="343"></span>
-<span class="code-line" data-line="344">  <span class="tok-keyword">if</span> (front) {</span>
-<span class="code-line" data-line="345">    avoidMode = <span class="tok-constant">AVOID_FRONT</span>;</span>
-<span class="code-line" data-line="346">    avoidStarted = now;</span>
-<span class="code-line" data-line="347">    Drive_Num = <span class="tok-constant">GO_BACK</span>;</span>
-<span class="code-line" data-line="348">    DriveSpeed = <span class="tok-constant">AVOID_SPEED</span>;</span>
-<span class="code-line" data-line="349">    <span class="tok-keyword">return</span>;</span>
-<span class="code-line" data-line="350">  }</span>
-<span class="code-line" data-line="351"></span>
-<span class="code-line" data-line="352">  <span class="tok-keyword">if</span> (back) {</span>
-<span class="code-line" data-line="353">    avoidMode = <span class="tok-constant">AVOID_REAR</span>;</span>
-<span class="code-line" data-line="354">    avoidStarted = now;</span>
-<span class="code-line" data-line="355">    Drive_Num = <span class="tok-constant">GO_ADVANCE</span>;</span>
+<span class="code-line" data-line="305">  <span class="tok-keyword">const</span> unsigned long echoTime = pulseIn(Echo_PIN, <span class="tok-constant">HIGH</span>, ECHO_TIMEOUT_US);</span>
+<span class="code-line" data-line="306">  <span class="tok-keyword">if</span> (echoTime == <span class="tok-number">0</span>) {</span>
+<span class="code-line" data-line="307">    <span class="tok-keyword">return</span> -<span class="tok-number">1.0f</span>;</span>
+<span class="code-line" data-line="308">  }</span>
+<span class="code-line" data-line="309">  <span class="tok-keyword">return</span> echoTime * <span class="tok-number">0.01657f</span>;</span>
+<span class="code-line" data-line="310">}</span>
+<span class="code-line" data-line="311"></span>
+<span class="code-line" data-line="312"><span class="tok-keyword">void</span> updateSensors() {</span>
+<span class="code-line" data-line="313">  <span class="tok-keyword">const</span> <span class="tok-keyword">uint32_t</span> now = millis();</span>
+<span class="code-line" data-line="314">  <span class="tok-keyword">if</span> (!sensorSampled || <span class="tok-keyword">uint32_t</span>(now - sensorAt) &gt;= SENSOR_PERIOD_MS) {</span>
+<span class="code-line" data-line="315">    distanceCm = watch();</span>
+<span class="code-line" data-line="316">    distanceValid = distanceCm &gt;= <span class="tok-number">0.0f</span>;</span>
+<span class="code-line" data-line="317">    sensorAt = now;</span>
+<span class="code-line" data-line="318">    sensorSampled = <span class="tok-constant">true</span>;</span>
+<span class="code-line" data-line="319">  }</span>
+<span class="code-line" data-line="320"></span>
+<span class="code-line" data-line="321">  front = distanceValid &amp;&amp; distanceCm &lt;= REVERSE_DISTANCE_CM;</span>
+<span class="code-line" data-line="322">  back = digitalRead(LFSensor_bl) == REAR_ACTIVE_LEVEL ||</span>
+<span class="code-line" data-line="323">         digitalRead(LFSensor_br) == REAR_ACTIVE_LEVEL;</span>
+<span class="code-line" data-line="324">}</span>
+<span class="code-line" data-line="325"></span>
+<span class="code-line" data-line="326"><span class="tok-comment">// ============================================================================</span></span>
+<span class="code-line" data-line="327"><span class="tok-comment">// 8. 障害物回避と手動操作の優先順位</span></span>
+<span class="code-line" data-line="328"><span class="tok-comment">// ============================================================================</span></span>
+<span class="code-line" data-line="329"><span class="tok-keyword">void</span> checkSensorsAndObstacles() {</span>
+<span class="code-line" data-line="330">  updateRemoteHold();</span>
+<span class="code-line" data-line="331"></span>
+<span class="code-line" data-line="332"><span class="tok-comment">  // ボタンを離した場合、回避中でも停止する。</span></span>
+<span class="code-line" data-line="333">  <span class="tok-keyword">if</span> (!holdActive || Remote_Num == <span class="tok-constant">STOP_STOP</span>) {</span>
+<span class="code-line" data-line="334">    resetToStop();</span>
+<span class="code-line" data-line="335">    <span class="tok-keyword">return</span>;</span>
+<span class="code-line" data-line="336">  }</span>
+<span class="code-line" data-line="337"></span>
+<span class="code-line" data-line="338">  <span class="tok-keyword">if</span> (!distanceValid || (front &amp;&amp; back)) {</span>
+<span class="code-line" data-line="339">    resetToStop();</span>
+<span class="code-line" data-line="340">    <span class="tok-keyword">return</span>;</span>
+<span class="code-line" data-line="341">  }</span>
+<span class="code-line" data-line="342"></span>
+<span class="code-line" data-line="343">  <span class="tok-keyword">const</span> <span class="tok-keyword">uint32_t</span> now = millis();</span>
+<span class="code-line" data-line="344">  <span class="tok-keyword">if</span> (avoidMode != <span class="tok-constant">AVOID_NONE</span> &amp;&amp; <span class="tok-keyword">uint32_t</span>(now - avoidStarted) &gt;= AUTO_MAX_MS) {</span>
+<span class="code-line" data-line="345">    resetToStop();</span>
+<span class="code-line" data-line="346">    <span class="tok-keyword">return</span>;</span>
+<span class="code-line" data-line="347">  }</span>
+<span class="code-line" data-line="348"></span>
+<span class="code-line" data-line="349"><span class="tok-comment">  // 前方回避中：後方を監視しながら、15cmより離れるまで後退する。</span></span>
+<span class="code-line" data-line="350">  <span class="tok-keyword">if</span> (avoidMode == <span class="tok-constant">AVOID_FRONT</span>) {</span>
+<span class="code-line" data-line="351">    <span class="tok-keyword">if</span> (back || distanceCm &gt; RELEASE_DISTANCE_CM) {</span>
+<span class="code-line" data-line="352">      resetToStop();</span>
+<span class="code-line" data-line="353">      <span class="tok-keyword">return</span>;</span>
+<span class="code-line" data-line="354">    }</span>
+<span class="code-line" data-line="355">    Drive_Num = <span class="tok-constant">GO_BACK</span>;</span>
 <span class="code-line" data-line="356">    DriveSpeed = <span class="tok-constant">AVOID_SPEED</span>;</span>
 <span class="code-line" data-line="357">    <span class="tok-keyword">return</span>;</span>
 <span class="code-line" data-line="358">  }</span>
 <span class="code-line" data-line="359"></span>
-<span class="code-line" data-line="360">  Drive_Num = Remote_Num;</span>
-<span class="code-line" data-line="361">  <span class="tok-keyword">if</span> (Drive_Num == <span class="tok-constant">GO_ADVANCE</span>) {</span>
-<span class="code-line" data-line="362">    DriveSpeed = ADVANCE_SPEED;</span>
-<span class="code-line" data-line="363">  } <span class="tok-keyword">else</span> <span class="tok-keyword">if</span> (Drive_Num == <span class="tok-constant">GO_BACK</span>) {</span>
-<span class="code-line" data-line="364">    DriveSpeed = BACK_SPEED;</span>
-<span class="code-line" data-line="365">  } <span class="tok-keyword">else</span> {</span>
-<span class="code-line" data-line="366">    DriveSpeed = TURN_SPEED;</span>
-<span class="code-line" data-line="367">  }</span>
-<span class="code-line" data-line="368">}</span>
-<span class="code-line" data-line="369"></span>
-<span class="code-line" data-line="370"><span class="tok-comment">// ============================================================================</span></span>
-<span class="code-line" data-line="371"><span class="tok-comment">// 9. 距離に応じたブザー（delayを使わない）</span></span>
-<span class="code-line" data-line="372"><span class="tok-comment">// ============================================================================</span></span>
-<span class="code-line" data-line="373"><span class="tok-keyword">uint32_t</span> getBuzzerPeriod(<span class="tok-keyword">float</span> cm) {</span>
-<span class="code-line" data-line="374">  <span class="tok-keyword">if</span> (cm &lt;= REVERSE_DISTANCE_CM) {</span>
-<span class="code-line" data-line="375">    <span class="tok-keyword">return</span> BUZZ_FAST_MS;</span>
-<span class="code-line" data-line="376">  }</span>
-<span class="code-line" data-line="377">  <span class="tok-keyword">if</span> (cm &gt;= WARNING_DISTANCE_CM) {</span>
-<span class="code-line" data-line="378">    <span class="tok-keyword">return</span> BUZZ_SLOW_MS;</span>
-<span class="code-line" data-line="379">  }</span>
-<span class="code-line" data-line="380"></span>
-<span class="code-line" data-line="381">  <span class="tok-keyword">const</span> <span class="tok-keyword">float</span> ratio = (cm - REVERSE_DISTANCE_CM) /</span>
-<span class="code-line" data-line="382">                      (WARNING_DISTANCE_CM - REVERSE_DISTANCE_CM);</span>
-<span class="code-line" data-line="383">  <span class="tok-keyword">return</span> BUZZ_FAST_MS + <span class="tok-keyword">uint32_t</span>(ratio * (BUZZ_SLOW_MS - BUZZ_FAST_MS));</span>
-<span class="code-line" data-line="384">}</span>
-<span class="code-line" data-line="385"></span>
-<span class="code-line" data-line="386"><span class="tok-keyword">void</span> warning() {</span>
-<span class="code-line" data-line="387">  <span class="tok-keyword">const</span> <span class="tok-keyword">bool</span> alarm = distanceValid &amp;&amp; distanceCm &lt;= WARNING_DISTANCE_CM;</span>
-<span class="code-line" data-line="388">  <span class="tok-keyword">if</span> (!alarm) {</span>
-<span class="code-line" data-line="389">    digitalWrite(BUZZ_PIN, BUZZ_ACTIVE_LEVEL == <span class="tok-constant">LOW</span> ? <span class="tok-constant">HIGH</span> : <span class="tok-constant">LOW</span>);</span>
-<span class="code-line" data-line="390">    buzzerRunning = <span class="tok-constant">false</span>;</span>
-<span class="code-line" data-line="391">    <span class="tok-keyword">return</span>;</span>
-<span class="code-line" data-line="392">  }</span>
-<span class="code-line" data-line="393"></span>
-<span class="code-line" data-line="394">  <span class="tok-keyword">const</span> <span class="tok-keyword">uint32_t</span> now = millis();</span>
-<span class="code-line" data-line="395">  <span class="tok-keyword">const</span> <span class="tok-keyword">uint32_t</span> period = getBuzzerPeriod(distanceCm);</span>
-<span class="code-line" data-line="396">  <span class="tok-keyword">if</span> (!buzzerRunning || <span class="tok-keyword">uint32_t</span>(now - buzzerCycleAt) &gt;= period) {</span>
-<span class="code-line" data-line="397">    buzzerCycleAt = now;</span>
-<span class="code-line" data-line="398">    buzzerRunning = <span class="tok-constant">true</span>;</span>
-<span class="code-line" data-line="399">  }</span>
-<span class="code-line" data-line="400"></span>
-<span class="code-line" data-line="401">  <span class="tok-keyword">const</span> <span class="tok-keyword">bool</span> on = <span class="tok-keyword">uint32_t</span>(now - buzzerCycleAt) &lt; BUZZ_ON_MS;</span>
-<span class="code-line" data-line="402">  digitalWrite(BUZZ_PIN, on ? BUZZ_ACTIVE_LEVEL :</span>
-<span class="code-line" data-line="403">                            (BUZZ_ACTIVE_LEVEL == <span class="tok-constant">LOW</span> ? <span class="tok-constant">HIGH</span> : <span class="tok-constant">LOW</span>));</span>
-<span class="code-line" data-line="404">}</span>
-<span class="code-line" data-line="405"></span>
-<span class="code-line" data-line="406"><span class="tok-comment">// ============================================================================</span></span>
-<span class="code-line" data-line="407"><span class="tok-comment">// 10. モーター実行（逆転前に100ms停止）</span></span>
-<span class="code-line" data-line="408"><span class="tok-comment">// ============================================================================</span></span>
-<span class="code-line" data-line="409"><span class="tok-keyword">void</span> do_Drive_Tick() {</span>
-<span class="code-line" data-line="410">  <span class="tok-keyword">if</span> (Drive_Num == <span class="tok-constant">STOP_STOP</span>) {</span>
-<span class="code-line" data-line="411">    stop_Stop();</span>
-<span class="code-line" data-line="412">    directionWaiting = <span class="tok-constant">false</span>;</span>
-<span class="code-line" data-line="413">    <span class="tok-keyword">return</span>;</span>
-<span class="code-line" data-line="414">  }</span>
-<span class="code-line" data-line="415"></span>
-<span class="code-line" data-line="416">  <span class="tok-keyword">int</span> right = <span class="tok-number">0</span>;</span>
-<span class="code-line" data-line="417">  <span class="tok-keyword">int</span> left = <span class="tok-number">0</span>;</span>
-<span class="code-line" data-line="418">  <span class="tok-keyword">switch</span> (Drive_Num) {</span>
-<span class="code-line" data-line="419">    <span class="tok-keyword">case</span> <span class="tok-constant">GO_ADVANCE</span>: right = DriveSpeed;  left = DriveSpeed;  <span class="tok-keyword">break</span>;</span>
-<span class="code-line" data-line="420">    <span class="tok-keyword">case</span> <span class="tok-constant">GO_BACK</span>:    right = -DriveSpeed; left = -DriveSpeed; <span class="tok-keyword">break</span>;</span>
-<span class="code-line" data-line="421">    <span class="tok-keyword">case</span> <span class="tok-constant">GO_RIGHT</span>:   right = -DriveSpeed; left = DriveSpeed;  <span class="tok-keyword">break</span>;</span>
-<span class="code-line" data-line="422">    <span class="tok-keyword">case</span> <span class="tok-constant">GO_LEFT</span>:    right = DriveSpeed;  left = -DriveSpeed; <span class="tok-keyword">break</span>;</span>
-<span class="code-line" data-line="423">    <span class="tok-keyword">default</span>:        stop_Stop(); <span class="tok-keyword">return</span>;</span>
-<span class="code-line" data-line="424">  }</span>
-<span class="code-line" data-line="425"></span>
-<span class="code-line" data-line="426">  <span class="tok-keyword">const</span> <span class="tok-keyword">uint32_t</span> now = millis();</span>
-<span class="code-line" data-line="427">  <span class="tok-keyword">if</span> (directionWaiting) {</span>
-<span class="code-line" data-line="428">    <span class="tok-keyword">if</span> (<span class="tok-keyword">uint32_t</span>(now - directionStoppedAt) &lt; DIRECTION_STOP_MS) {</span>
-<span class="code-line" data-line="429">      <span class="tok-keyword">return</span>;</span>
-<span class="code-line" data-line="430">    }</span>
-<span class="code-line" data-line="431">    directionWaiting = <span class="tok-constant">false</span>;</span>
-<span class="code-line" data-line="432">  }</span>
-<span class="code-line" data-line="433"></span>
-<span class="code-line" data-line="434">  <span class="tok-keyword">const</span> <span class="tok-keyword">bool</span> reversing = (appliedRight &gt; <span class="tok-number">0</span> &amp;&amp; right &lt; <span class="tok-number">0</span>) ||</span>
-<span class="code-line" data-line="435">                         (appliedRight &lt; <span class="tok-number">0</span> &amp;&amp; right &gt; <span class="tok-number">0</span>) ||</span>
-<span class="code-line" data-line="436">                         (appliedLeft &gt; <span class="tok-number">0</span> &amp;&amp; left &lt; <span class="tok-number">0</span>) ||</span>
-<span class="code-line" data-line="437">                         (appliedLeft &lt; <span class="tok-number">0</span> &amp;&amp; left &gt; <span class="tok-number">0</span>);</span>
-<span class="code-line" data-line="438">  <span class="tok-keyword">if</span> (reversing) {</span>
-<span class="code-line" data-line="439">    stop_Stop();</span>
-<span class="code-line" data-line="440">    directionWaiting = <span class="tok-constant">true</span>;</span>
-<span class="code-line" data-line="441">    directionStoppedAt = now;</span>
-<span class="code-line" data-line="442">    <span class="tok-keyword">return</span>;</span>
-<span class="code-line" data-line="443">  }</span>
-<span class="code-line" data-line="444"></span>
+<span class="code-line" data-line="360"><span class="tok-comment">  // 後方回避中：前方を監視しながら、後方検知がなくなるまで前進する。</span></span>
+<span class="code-line" data-line="361">  <span class="tok-keyword">if</span> (avoidMode == <span class="tok-constant">AVOID_REAR</span>) {</span>
+<span class="code-line" data-line="362">    <span class="tok-keyword">if</span> (front || !back) {</span>
+<span class="code-line" data-line="363">      resetToStop();</span>
+<span class="code-line" data-line="364">      <span class="tok-keyword">return</span>;</span>
+<span class="code-line" data-line="365">    }</span>
+<span class="code-line" data-line="366">    Drive_Num = <span class="tok-constant">GO_ADVANCE</span>;</span>
+<span class="code-line" data-line="367">    DriveSpeed = <span class="tok-constant">AVOID_SPEED</span>;</span>
+<span class="code-line" data-line="368">    <span class="tok-keyword">return</span>;</span>
+<span class="code-line" data-line="369">  }</span>
+<span class="code-line" data-line="370"></span>
+<span class="code-line" data-line="371">  <span class="tok-keyword">if</span> (front) {</span>
+<span class="code-line" data-line="372">    avoidMode = <span class="tok-constant">AVOID_FRONT</span>;</span>
+<span class="code-line" data-line="373">    avoidStarted = now;</span>
+<span class="code-line" data-line="374">    Drive_Num = <span class="tok-constant">GO_BACK</span>;</span>
+<span class="code-line" data-line="375">    DriveSpeed = <span class="tok-constant">AVOID_SPEED</span>;</span>
+<span class="code-line" data-line="376">    <span class="tok-keyword">return</span>;</span>
+<span class="code-line" data-line="377">  }</span>
+<span class="code-line" data-line="378"></span>
+<span class="code-line" data-line="379">  <span class="tok-keyword">if</span> (back) {</span>
+<span class="code-line" data-line="380">    avoidMode = <span class="tok-constant">AVOID_REAR</span>;</span>
+<span class="code-line" data-line="381">    avoidStarted = now;</span>
+<span class="code-line" data-line="382">    Drive_Num = <span class="tok-constant">GO_ADVANCE</span>;</span>
+<span class="code-line" data-line="383">    DriveSpeed = <span class="tok-constant">AVOID_SPEED</span>;</span>
+<span class="code-line" data-line="384">    <span class="tok-keyword">return</span>;</span>
+<span class="code-line" data-line="385">  }</span>
+<span class="code-line" data-line="386"></span>
+<span class="code-line" data-line="387">  Drive_Num = Remote_Num;</span>
+<span class="code-line" data-line="388">  <span class="tok-keyword">if</span> (Drive_Num == <span class="tok-constant">GO_ADVANCE</span>) {</span>
+<span class="code-line" data-line="389">    DriveSpeed = ADVANCE_SPEED;</span>
+<span class="code-line" data-line="390">  } <span class="tok-keyword">else</span> <span class="tok-keyword">if</span> (Drive_Num == <span class="tok-constant">GO_BACK</span>) {</span>
+<span class="code-line" data-line="391">    DriveSpeed = BACK_SPEED;</span>
+<span class="code-line" data-line="392">  } <span class="tok-keyword">else</span> {</span>
+<span class="code-line" data-line="393">    DriveSpeed = TURN_SPEED;</span>
+<span class="code-line" data-line="394">  }</span>
+<span class="code-line" data-line="395">}</span>
+<span class="code-line" data-line="396"></span>
+<span class="code-line" data-line="397"><span class="tok-comment">// ============================================================================</span></span>
+<span class="code-line" data-line="398"><span class="tok-comment">// 9. 距離に応じたブザー（delayを使わない）</span></span>
+<span class="code-line" data-line="399"><span class="tok-comment">// ============================================================================</span></span>
+<span class="code-line" data-line="400"><span class="tok-keyword">uint32_t</span> getBuzzerPeriod(<span class="tok-keyword">float</span> cm) {</span>
+<span class="code-line" data-line="401">  <span class="tok-keyword">if</span> (cm &lt;= REVERSE_DISTANCE_CM) {</span>
+<span class="code-line" data-line="402">    <span class="tok-keyword">return</span> BUZZ_FAST_MS;</span>
+<span class="code-line" data-line="403">  }</span>
+<span class="code-line" data-line="404">  <span class="tok-keyword">if</span> (cm &gt;= WARNING_DISTANCE_CM) {</span>
+<span class="code-line" data-line="405">    <span class="tok-keyword">return</span> BUZZ_SLOW_MS;</span>
+<span class="code-line" data-line="406">  }</span>
+<span class="code-line" data-line="407"></span>
+<span class="code-line" data-line="408">  <span class="tok-keyword">const</span> <span class="tok-keyword">float</span> ratio = (cm - REVERSE_DISTANCE_CM) /</span>
+<span class="code-line" data-line="409">                      (WARNING_DISTANCE_CM - REVERSE_DISTANCE_CM);</span>
+<span class="code-line" data-line="410">  <span class="tok-keyword">return</span> BUZZ_FAST_MS + <span class="tok-keyword">uint32_t</span>(ratio * (BUZZ_SLOW_MS - BUZZ_FAST_MS));</span>
+<span class="code-line" data-line="411">}</span>
+<span class="code-line" data-line="412"></span>
+<span class="code-line" data-line="413"><span class="tok-keyword">void</span> warning() {</span>
+<span class="code-line" data-line="414">  <span class="tok-keyword">const</span> <span class="tok-keyword">bool</span> alarm = distanceValid &amp;&amp; distanceCm &lt;= WARNING_DISTANCE_CM;</span>
+<span class="code-line" data-line="415">  <span class="tok-keyword">if</span> (!alarm) {</span>
+<span class="code-line" data-line="416">    digitalWrite(BUZZ_PIN, BUZZ_ACTIVE_LEVEL == <span class="tok-constant">LOW</span> ? <span class="tok-constant">HIGH</span> : <span class="tok-constant">LOW</span>);</span>
+<span class="code-line" data-line="417">    buzzerRunning = <span class="tok-constant">false</span>;</span>
+<span class="code-line" data-line="418">    <span class="tok-keyword">return</span>;</span>
+<span class="code-line" data-line="419">  }</span>
+<span class="code-line" data-line="420"></span>
+<span class="code-line" data-line="421">  <span class="tok-keyword">const</span> <span class="tok-keyword">uint32_t</span> now = millis();</span>
+<span class="code-line" data-line="422">  <span class="tok-keyword">const</span> <span class="tok-keyword">uint32_t</span> period = getBuzzerPeriod(distanceCm);</span>
+<span class="code-line" data-line="423">  <span class="tok-keyword">if</span> (!buzzerRunning || <span class="tok-keyword">uint32_t</span>(now - buzzerCycleAt) &gt;= period) {</span>
+<span class="code-line" data-line="424">    buzzerCycleAt = now;</span>
+<span class="code-line" data-line="425">    buzzerRunning = <span class="tok-constant">true</span>;</span>
+<span class="code-line" data-line="426">  }</span>
+<span class="code-line" data-line="427"></span>
+<span class="code-line" data-line="428">  <span class="tok-keyword">const</span> <span class="tok-keyword">bool</span> on = <span class="tok-keyword">uint32_t</span>(now - buzzerCycleAt) &lt; BUZZ_ON_MS;</span>
+<span class="code-line" data-line="429">  digitalWrite(BUZZ_PIN, on ? BUZZ_ACTIVE_LEVEL :</span>
+<span class="code-line" data-line="430">                            (BUZZ_ACTIVE_LEVEL == <span class="tok-constant">LOW</span> ? <span class="tok-constant">HIGH</span> : <span class="tok-constant">LOW</span>));</span>
+<span class="code-line" data-line="431">}</span>
+<span class="code-line" data-line="432"></span>
+<span class="code-line" data-line="433"><span class="tok-comment">// ============================================================================</span></span>
+<span class="code-line" data-line="434"><span class="tok-comment">// 10. モーター実行（逆転前に100ms停止）</span></span>
+<span class="code-line" data-line="435"><span class="tok-comment">// ============================================================================</span></span>
+<span class="code-line" data-line="436"><span class="tok-keyword">void</span> do_Drive_Tick() {</span>
+<span class="code-line" data-line="437">  <span class="tok-keyword">if</span> (Drive_Num == <span class="tok-constant">STOP_STOP</span>) {</span>
+<span class="code-line" data-line="438">    stop_Stop();</span>
+<span class="code-line" data-line="439">    directionWaiting = <span class="tok-constant">false</span>;</span>
+<span class="code-line" data-line="440">    <span class="tok-keyword">return</span>;</span>
+<span class="code-line" data-line="441">  }</span>
+<span class="code-line" data-line="442"></span>
+<span class="code-line" data-line="443">  <span class="tok-keyword">int</span> right = <span class="tok-number">0</span>;</span>
+<span class="code-line" data-line="444">  <span class="tok-keyword">int</span> left = <span class="tok-number">0</span>;</span>
 <span class="code-line" data-line="445">  <span class="tok-keyword">switch</span> (Drive_Num) {</span>
-<span class="code-line" data-line="446">    <span class="tok-keyword">case</span> <span class="tok-constant">GO_ADVANCE</span>: go_Advance(); <span class="tok-keyword">break</span>;</span>
-<span class="code-line" data-line="447">    <span class="tok-keyword">case</span> <span class="tok-constant">GO_BACK</span>:    go_Back();    <span class="tok-keyword">break</span>;</span>
-<span class="code-line" data-line="448">    <span class="tok-keyword">case</span> <span class="tok-constant">GO_RIGHT</span>:   go_Right();   <span class="tok-keyword">break</span>;</span>
-<span class="code-line" data-line="449">    <span class="tok-keyword">case</span> <span class="tok-constant">GO_LEFT</span>:    go_Left();    <span class="tok-keyword">break</span>;</span>
-<span class="code-line" data-line="450">    <span class="tok-keyword">default</span>:        stop_Stop();  <span class="tok-keyword">break</span>;</span>
+<span class="code-line" data-line="446">    <span class="tok-keyword">case</span> <span class="tok-constant">GO_ADVANCE</span>: right = DriveSpeed;  left = DriveSpeed;  <span class="tok-keyword">break</span>;</span>
+<span class="code-line" data-line="447">    <span class="tok-keyword">case</span> <span class="tok-constant">GO_BACK</span>:    right = -DriveSpeed; left = -DriveSpeed; <span class="tok-keyword">break</span>;</span>
+<span class="code-line" data-line="448">    <span class="tok-keyword">case</span> <span class="tok-constant">GO_RIGHT</span>:   right = -DriveSpeed; left = DriveSpeed;  <span class="tok-keyword">break</span>;</span>
+<span class="code-line" data-line="449">    <span class="tok-keyword">case</span> <span class="tok-constant">GO_LEFT</span>:    right = DriveSpeed;  left = -DriveSpeed; <span class="tok-keyword">break</span>;</span>
+<span class="code-line" data-line="450">    <span class="tok-keyword">default</span>:        stop_Stop(); <span class="tok-keyword">return</span>;</span>
 <span class="code-line" data-line="451">  }</span>
-<span class="code-line" data-line="452">}</span>
-<span class="code-line" data-line="453"></span>
-<span class="code-line" data-line="454"><span class="tok-comment">// ============================================================================</span></span>
-<span class="code-line" data-line="455"><span class="tok-comment">// 11. 初期化とメイン処理</span></span>
-<span class="code-line" data-line="456"><span class="tok-comment">// ============================================================================</span></span>
-<span class="code-line" data-line="457"><span class="tok-keyword">void</span> setup() {</span>
-<span class="code-line" data-line="458">  <span class="tok-keyword">const</span> <span class="tok-keyword">uint8_t</span> outputs[] = {</span>
-<span class="code-line" data-line="459">    speedPinR, RightDirectPin1, RightDirectPin2,</span>
-<span class="code-line" data-line="460">    speedPinL, LeftDirectPin1, LeftDirectPin2, BUZZ_PIN, Trig_PIN</span>
-<span class="code-line" data-line="461">  };</span>
-<span class="code-line" data-line="462">  <span class="tok-keyword">for</span> (<span class="tok-keyword">uint8_t</span> pin : outputs) {</span>
-<span class="code-line" data-line="463">    pinMode(pin, OUTPUT);</span>
-<span class="code-line" data-line="464">  }</span>
-<span class="code-line" data-line="465"></span>
-<span class="code-line" data-line="466">  stop_Stop();</span>
-<span class="code-line" data-line="467">  resetToStop();</span>
-<span class="code-line" data-line="468">  digitalWrite(BUZZ_PIN, BUZZ_ACTIVE_LEVEL == <span class="tok-constant">LOW</span> ? <span class="tok-constant">HIGH</span> : <span class="tok-constant">LOW</span>);</span>
-<span class="code-line" data-line="469">  digitalWrite(Trig_PIN, <span class="tok-constant">LOW</span>);</span>
-<span class="code-line" data-line="470">  pinMode(LFSensor_bl, INPUT);</span>
-<span class="code-line" data-line="471">  pinMode(LFSensor_br, INPUT);</span>
-<span class="code-line" data-line="472">  pinMode(Echo_PIN, INPUT);</span>
-<span class="code-line" data-line="473"></span>
-<span class="code-line" data-line="474">  headServo.attach(SERVO_PIN);</span>
-<span class="code-line" data-line="475">  headServo.write(<span class="tok-number">90</span>);</span>
-<span class="code-line" data-line="476">  delay(<span class="tok-number">400</span>);  <span class="tok-comment">// 起動時だけ正面合わせ。モーターは停止中。</span></span>
-<span class="code-line" data-line="477">  IrReceiver.begin(IR_RECEIVE_PIN, DISABLE_LED_FEEDBACK);</span>
-<span class="code-line" data-line="478">}</span>
-<span class="code-line" data-line="479"></span>
-<span class="code-line" data-line="480"><span class="tok-keyword">void</span> loop() {</span>
-<span class="code-line" data-line="481">  do_IR_Tick();                 <span class="tok-comment">// 1. 長押し信号と停止ボタン</span></span>
-<span class="code-line" data-line="482">  updateSensors();              <span class="tok-comment">// 2. 前方距離・後方障害物</span></span>
-<span class="code-line" data-line="483">  do_IR_Tick();                 <span class="tok-comment">// 3. 測距中に届いた信号も反映</span></span>
-<span class="code-line" data-line="484">  checkSensorsAndObstacles();   <span class="tok-comment">// 4. 停止 → 回避 → 手動操作</span></span>
-<span class="code-line" data-line="485">  warning();                   <span class="tok-comment">// 5. 距離に応じた警告音</span></span>
-<span class="code-line" data-line="486">  do_Drive_Tick();              <span class="tok-comment">// 6. モーターへ出力</span></span>
-<span class="code-line" data-line="487">}</span>
+<span class="code-line" data-line="452"></span>
+<span class="code-line" data-line="453">  <span class="tok-keyword">const</span> <span class="tok-keyword">uint32_t</span> now = millis();</span>
+<span class="code-line" data-line="454">  <span class="tok-keyword">if</span> (directionWaiting) {</span>
+<span class="code-line" data-line="455">    <span class="tok-keyword">if</span> (<span class="tok-keyword">uint32_t</span>(now - directionStoppedAt) &lt; DIRECTION_STOP_MS) {</span>
+<span class="code-line" data-line="456">      <span class="tok-keyword">return</span>;</span>
+<span class="code-line" data-line="457">    }</span>
+<span class="code-line" data-line="458">    directionWaiting = <span class="tok-constant">false</span>;</span>
+<span class="code-line" data-line="459">  }</span>
+<span class="code-line" data-line="460"></span>
+<span class="code-line" data-line="461">  <span class="tok-keyword">const</span> <span class="tok-keyword">bool</span> reversing = (appliedRight &gt; <span class="tok-number">0</span> &amp;&amp; right &lt; <span class="tok-number">0</span>) ||</span>
+<span class="code-line" data-line="462">                         (appliedRight &lt; <span class="tok-number">0</span> &amp;&amp; right &gt; <span class="tok-number">0</span>) ||</span>
+<span class="code-line" data-line="463">                         (appliedLeft &gt; <span class="tok-number">0</span> &amp;&amp; left &lt; <span class="tok-number">0</span>) ||</span>
+<span class="code-line" data-line="464">                         (appliedLeft &lt; <span class="tok-number">0</span> &amp;&amp; left &gt; <span class="tok-number">0</span>);</span>
+<span class="code-line" data-line="465">  <span class="tok-keyword">if</span> (reversing) {</span>
+<span class="code-line" data-line="466">    stop_Stop();</span>
+<span class="code-line" data-line="467">    directionWaiting = <span class="tok-constant">true</span>;</span>
+<span class="code-line" data-line="468">    directionStoppedAt = now;</span>
+<span class="code-line" data-line="469">    <span class="tok-keyword">return</span>;</span>
+<span class="code-line" data-line="470">  }</span>
+<span class="code-line" data-line="471"></span>
+<span class="code-line" data-line="472">  <span class="tok-keyword">switch</span> (Drive_Num) {</span>
+<span class="code-line" data-line="473">    <span class="tok-keyword">case</span> <span class="tok-constant">GO_ADVANCE</span>: go_Advance(); <span class="tok-keyword">break</span>;</span>
+<span class="code-line" data-line="474">    <span class="tok-keyword">case</span> <span class="tok-constant">GO_BACK</span>:    go_Back();    <span class="tok-keyword">break</span>;</span>
+<span class="code-line" data-line="475">    <span class="tok-keyword">case</span> <span class="tok-constant">GO_RIGHT</span>:   go_Right();   <span class="tok-keyword">break</span>;</span>
+<span class="code-line" data-line="476">    <span class="tok-keyword">case</span> <span class="tok-constant">GO_LEFT</span>:    go_Left();    <span class="tok-keyword">break</span>;</span>
+<span class="code-line" data-line="477">    <span class="tok-keyword">default</span>:        stop_Stop();  <span class="tok-keyword">break</span>;</span>
+<span class="code-line" data-line="478">  }</span>
+<span class="code-line" data-line="479">}</span>
+<span class="code-line" data-line="480"></span>
+<span class="code-line" data-line="481"><span class="tok-comment">// ============================================================================</span></span>
+<span class="code-line" data-line="482"><span class="tok-comment">// 11. 初期化とメイン処理</span></span>
+<span class="code-line" data-line="483"><span class="tok-comment">// ============================================================================</span></span>
+<span class="code-line" data-line="484"><span class="tok-keyword">void</span> setup() {</span>
+<span class="code-line" data-line="485">  <span class="tok-keyword">const</span> <span class="tok-keyword">uint8_t</span> outputs[] = {</span>
+<span class="code-line" data-line="486">    speedPinR, RightDirectPin1, RightDirectPin2,</span>
+<span class="code-line" data-line="487">    speedPinL, LeftDirectPin1, LeftDirectPin2, BUZZ_PIN, Trig_PIN, SERVO_PIN</span>
+<span class="code-line" data-line="488">  };</span>
+<span class="code-line" data-line="489">  <span class="tok-keyword">for</span> (<span class="tok-keyword">uint8_t</span> pin : outputs) {</span>
+<span class="code-line" data-line="490">    pinMode(pin, OUTPUT);</span>
+<span class="code-line" data-line="491">  }</span>
+<span class="code-line" data-line="492"></span>
+<span class="code-line" data-line="493">  stop_Stop();</span>
+<span class="code-line" data-line="494">  resetToStop();</span>
+<span class="code-line" data-line="495">  digitalWrite(BUZZ_PIN, BUZZ_ACTIVE_LEVEL == <span class="tok-constant">LOW</span> ? <span class="tok-constant">HIGH</span> : <span class="tok-constant">LOW</span>);</span>
+<span class="code-line" data-line="496">  digitalWrite(Trig_PIN, <span class="tok-constant">LOW</span>);</span>
+<span class="code-line" data-line="497">  pinMode(LFSensor_bl, INPUT);</span>
+<span class="code-line" data-line="498">  pinMode(LFSensor_br, INPUT);</span>
+<span class="code-line" data-line="499">  pinMode(Echo_PIN, INPUT);</span>
+<span class="code-line" data-line="500"></span>
+<span class="code-line" data-line="501">  digitalWrite(SERVO_PIN, <span class="tok-constant">LOW</span>);</span>
+<span class="code-line" data-line="502">  <span class="tok-keyword">const</span> <span class="tok-keyword">uint32_t</span> centerStarted = millis();</span>
+<span class="code-line" data-line="503">  while (<span class="tok-keyword">uint32_t</span>(millis() - centerStarted) &lt; <span class="tok-number">400UL</span>) {</span>
+<span class="code-line" data-line="504">    keepHeadForward();  <span class="tok-comment">// 起動時の正面合わせ。モーターは停止中。</span></span>
+<span class="code-line" data-line="505">  }</span>
+<span class="code-line" data-line="506">  IrReceiver.begin(IR_RECEIVE_PIN, DISABLE_LED_FEEDBACK);</span>
+<span class="code-line" data-line="507">}</span>
+<span class="code-line" data-line="508"></span>
+<span class="code-line" data-line="509"><span class="tok-keyword">void</span> loop() {</span>
+<span class="code-line" data-line="510">  do_IR_Tick();                 <span class="tok-comment">// 1. 長押し信号と停止ボタン</span></span>
+<span class="code-line" data-line="511">  keepHeadForward();            <span class="tok-comment">// 2. 元のD5でサーボを正面保持</span></span>
+<span class="code-line" data-line="512">  updateSensors();              <span class="tok-comment">// 3. 前方距離・後方障害物</span></span>
+<span class="code-line" data-line="513">  do_IR_Tick();                 <span class="tok-comment">// 4. 測距中に届いた信号も反映</span></span>
+<span class="code-line" data-line="514">  checkSensorsAndObstacles();   <span class="tok-comment">// 5. 停止 → 回避 → 手動操作</span></span>
+<span class="code-line" data-line="515">  warning();                   <span class="tok-comment">// 6. 距離に応じた警告音</span></span>
+<span class="code-line" data-line="516">  do_Drive_Tick();              <span class="tok-comment">// 7. モーターへ出力</span></span>
+<span class="code-line" data-line="517">}</span>
 </code></pre></main><script>document.getElementById("copy").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(document.getElementById("source").textContent);document.getElementById("message").textContent=" コピーしました"}catch{document.getElementById("message").textContent=" コードを選択してコピーしてください"}});</script></html>
