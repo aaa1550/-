@@ -1,0 +1,186 @@
+--- 完成コート.txt
++++ CompletedObstacleCar.ino
+@@ -175,6 +175,163 @@
+   appliedLeft = left;
+ }
+ 
++// ============================================================================
++// 【追加】障害物検知：オンライン保存した7枚のフローチャートに対応
++// サーボなし。元のリモコン処理・モーター処理・速度設定は変更しない。
++// ============================================================================
++#define Echo_PIN              3
++#define Trig_PIN             10
++#define LFSensor_bl           0
++#define LFSensor_br           2
++#define BUZZ_PIN             13
++#define REAR_ACTIVE_LEVEL   LOW
++#define BUZZ_ACTIVE_LEVEL   LOW
++
++#define FRONT_DANGER_CM     5.0f
++#define FRONT_WARNING_CM   15.0f
++#define SENSOR_INTERVAL_MS   60UL
++#define ECHO_TIMEOUT_US   15000UL
++#define AVOID_SPEED          26   // 行動制御の10%をPWMへ丸めた値
++#define BUZZ_SLOW_MS        600UL
++#define BUZZ_FAST_MS        100UL
++#define BUZZ_ON_MS           35UL
++
++// 図と同じ名前：距離SD、前方SR1/SR2、後方IR、リモコンRM、車両M
++float SD = -1.0f;
++bool SR1 = false;
++bool SR2 = false;
++bool IR = false;
++uint8_t RM = 0;
++uint8_t M = 0;
++bool distanceValid = false;
++bool sensorStarted = false;
++uint32_t lastSensorAt = 0;
++bool buzzerActive = false;
++uint32_t buzzerStartedAt = 0;
++
++// Main.png：元のsetupから追加で呼び出す初期化
++void setupObstacleDetection() {
++  digitalWrite(Trig_PIN, LOW);
++  pinMode(Trig_PIN, OUTPUT);
++  pinMode(Echo_PIN, INPUT);
++  pinMode(LFSensor_bl, INPUT);
++  pinMode(LFSensor_br, INPUT);
++  digitalWrite(BUZZ_PIN, HIGH);
++}
++
++// 超音波センサ.png：5cm以下をSR1、5cm超～15cm以下をSR2にする。
++// 図では省略されている解除処理も行い、前回のTRUEを残さない。
++void updateUltrasonicState() {
++  const uint32_t now = millis();
++  if (sensorStarted && uint32_t(now - lastSensorAt) < SENSOR_INTERVAL_MS) {
++    return;
++  }
++  sensorStarted = true;
++  lastSensorAt = now;
++
++  digitalWrite(Trig_PIN, LOW);
++  delayMicroseconds(2);
++  digitalWrite(Trig_PIN, HIGH);
++  delayMicroseconds(10);
++  digitalWrite(Trig_PIN, LOW);
++  const unsigned long echo = pulseIn(Echo_PIN, HIGH, ECHO_TIMEOUT_US);
++
++  distanceValid = echo > 0;
++  SD = distanceValid ? echo / 58.0f : -1.0f;
++  SR1 = distanceValid && SD <= FRONT_DANGER_CM;
++  SR2 = distanceValid && !SR1 && SD <= FRONT_WARNING_CM;
++}
++
++// 赤外線センサ.png：左右のどちらかがLOWなら後方障害物あり。
++void updateRearInfraredState() {
++  IR = digitalRead(LFSensor_bl) == REAR_ACTIVE_LEVEL ||
++       digitalRead(LFSensor_br) == REAR_ACTIVE_LEVEL;
++}
++
++// 車両状態.png：元のrequestedを残し、別変数Mに最終的な動作を入れる。
++void updateVehicleState() {
++  // 測距中に250msを超えた場合も、元の長押し停止処理を適用する。
++  checkHoldTimeout();
++  switch (requested) {
++    case FORWARD:  RM = 1; break;
++    case BACKWARD: RM = 2; break;
++    case RIGHT:    RM = 3; break;
++    case LEFT:     RM = 4; break;
++    default:       RM = 0; break;
++  }
++
++  // 元のOK・長押し解除を優先。前後同時検知と測距失敗も停止にする。
++  if (!holdActive || RM == 0 || !distanceValid || (SR1 && IR)) {
++    M = 0;
++  } else if (SR1) {
++    M = 1;  // 前方5cm以下：低速後退
++  } else if (IR) {
++    M = 2;  // 後方検知：低速前進
++  } else {
++    M = RM + 2;  // 1→3前進、2→4後退、3→5右、4→6左
++  }
++}
++
++// 完成ブザーフロー.png：SR1またはIR、またはSR2なら警告音。
++// 前方5～15cmでは、以前指定された「近いほど速く」を追加する。
++void updateBuzzerState() {
++  if (!(SR1 || IR || SR2)) {
++    digitalWrite(BUZZ_PIN, HIGH);
++    buzzerActive = false;
++    return;
++  }
++  uint32_t period = BUZZ_FAST_MS;
++  if (!SR1 && !IR && SR2) {
++    const float ratio = (SD - FRONT_DANGER_CM) /
++                        (FRONT_WARNING_CM - FRONT_DANGER_CM);
++    period = BUZZ_FAST_MS + uint32_t(ratio * (BUZZ_SLOW_MS - BUZZ_FAST_MS));
++  }
++  const uint32_t now = millis();
++  if (!buzzerActive || uint32_t(now - buzzerStartedAt) >= period) {
++    buzzerActive = true;
++    buzzerStartedAt = now;
++  }
++  const bool on = uint32_t(now - buzzerStartedAt) < BUZZ_ON_MS;
++  digitalWrite(BUZZ_PIN, on ? BUZZ_ACTIVE_LEVEL : HIGH);
++}
++
++// 行動制御.png：M=1/2だけ追加出力。逆転時の100ms停止は元と同じ。
++// M=3～6はfalseを返し、元のdriveMotors()にそのまま任せる。
++bool applyObstacleMovement() {
++  if (M == 0) {
++    stopMotors();
++    return true;
++  }
++  if (M != 1 && M != 2) {
++    return false;
++  }
++  const int speed = M == 1 ? -AVOID_SPEED : AVOID_SPEED;
++  const bool reversing =
++      (appliedRight > 0 && speed < 0) ||
++      (appliedRight < 0 && speed > 0) ||
++      (appliedLeft > 0 && speed < 0) ||
++      (appliedLeft < 0 && speed > 0);
++  if (reversing) {
++    stopMotors();
++  }
++  if (stopTimingActive) {
++    if (uint32_t(millis() - stoppedAt) < DIRECTION_STOP_MS) {
++      return true;
++    }
++    stopTimingActive = false;
++  }
++  digitalWrite(RightDirectPin1, speed > 0 ? HIGH : LOW);
++  digitalWrite(RightDirectPin2, speed < 0 ? HIGH : LOW);
++  digitalWrite(LeftDirectPin1, speed > 0 ? HIGH : LOW);
++  digitalWrite(LeftDirectPin2, speed < 0 ? HIGH : LOW);
++  analogWrite(speedPinR, AVOID_SPEED);
++  analogWrite(speedPinL, AVOID_SPEED);
++  appliedRight = speed;
++  appliedLeft = speed;
++  return true;
++}
++
++
+ void setup() {
+   pinMode(speedPinR, OUTPUT);
+   pinMode(RightDirectPin1, OUTPUT);
+@@ -187,10 +344,19 @@
+   pinMode(13, OUTPUT);
+   stopMotors();
+   IrReceiver.begin(IR_RECEIVE_PIN, DISABLE_LED_FEEDBACK);
++  setupObstacleDetection();  // 【追加】センサー初期化
+ }
+ 
+ void loop() {
+   readRemote();
+   checkHoldTimeout();
++  // 【追加】Main.pngと同じ順序で状態を更新する
++  updateUltrasonicState();
++  updateRearInfraredState();
++  updateVehicleState();
++  updateBuzzerState();
++  if (applyObstacleMovement()) {
++    return;  // 障害物による後退・前進、または停止
++  }
+   driveMotors();
+ }
