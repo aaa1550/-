@@ -52,29 +52,29 @@ int main() {
     fakeNow+=1; loop(); assert(!holdActive && pwm[9]==0 && pwm[6]==0);
     send(commands[i],IRDATA_FLAGS_IS_REPEAT); loop(); assert(!holdActive);
   }
-  // 前方5cm以下：全方向で低速後退。100msの切替待ちも確認。
+  // 前方10cm以下：全方向で後退。100msの切替待ちも確認。
   for (auto cmd:commands) {
-    reset(); send(cmd); loop(); distance(5); fakeNow+=10; tick();
+    reset(); send(cmd); loop(); distance(10); fakeNow+=10; tick();
     assert(SR1 && !SR2 && M==1);
     fakeNow+=100; tick();
-    assert(appliedRight==-26 && appliedLeft==-26 && pwm[9]==26);
+    assert(appliedRight==-100 && appliedLeft==-100 && pwm[9]==100);
     assert(pins[BUZZ_PIN]==LOW);
-    // 5cmより離れれば元の操作へ戻る（画像に回避ラッチはない）。
-    distance(6); fakeNow+=1; tick(); assert(!SR1 && SR2 && M>=3);
+    // 10cmより離れれば元の操作へ戻る（画像に回避ラッチはない）。
+    distance(11); fakeNow+=1; tick(); assert(!SR1 && SR2 && M>=3);
     fakeNow+=100; tick(); assert(pwm[9]==180);
   }
-  // 後方は左右のどちらでも低速前進、後方警告も鳴らす。
+  // 後方は左右のどちらでも前進、後方警告も鳴らす。
   for (int pin:{LFSensor_bl,LFSensor_br}) {
     reset(); send(IR_BACK); loop(); pins[pin]=LOW; fakeNow+=1; tick();
     assert(IR && M==2 && pwm[9]==0);
-    fakeNow+=100; tick(); assert(appliedRight==26 && appliedLeft==26);
+    fakeNow+=100; tick(); assert(appliedRight==100 && appliedLeft==100);
     assert(pins[BUZZ_PIN]==LOW);
     pins[pin]=HIGH; fakeNow+=1; tick(); assert(M==4);
     fakeNow+=100; tick(); assert(appliedRight==-180);
   }
-  // 15cm境界、5cm境界、フラグ解除、無応答。
+  // 15cm境界、10cm境界、フラグ解除、無応答。
   reset(); distance(15); updateUltrasonicState(); assert(SR2 && !SR1);
-  distance(5); updateUltrasonicState(); assert(SR1 && !SR2);
+  distance(10); updateUltrasonicState(); assert(SR1 && !SR2);
   distance(20); updateUltrasonicState(); assert(!SR1 && !SR2);
   echoUs=0; sensorStarted=false; updateUltrasonicState(); assert(!distanceValid);
   // 前後同時・超音波失敗・OK・長押し解除では回避も停止。
@@ -82,7 +82,7 @@ int main() {
   assert(M==0 && pwm[9]==0);
   reset(); send(IR_ADVANCE); echoUs=0; loop(); assert(M==0 && pwm[9]==0);
   reset(); distance(4); loop(); assert(M==0 && !holdActive); // 起動時
-  send(IR_ADVANCE); loop(); assert(M==1 && pwm[9]==26);
+  send(IR_ADVANCE); loop(); assert(M==1 && pwm[9]==100);
   send(IR_STOP); loop(); assert(M==0 && !holdActive && pwm[9]==0);
   send(IR_ADVANCE,IRDATA_FLAGS_IS_REPEAT); loop(); assert(!holdActive);
   reset(); send(IR_ADVANCE); distance(4); loop(); fakeNow+=250; loop();
@@ -93,12 +93,12 @@ int main() {
   fakeNow+=50; loop(); assert(!holdActive);
   reset(); send(IR_ADVANCE); loop(); send(IR_ADVANCE,IRDATA_FLAGS_PARITY_FAILED);
   loop(); assert(!holdActive && pwm[9]==0);
-  // ブザー：15cm=600ms、10cm=350ms、5cm/後方=100ms、ON35ms。
-  for (int cm:{15,10,5}) {
-    reset(); SD=cm; SR1=cm<=5; SR2=!SR1;
+  // ブザー：15cm=600ms、12.5cm=350ms、10cm/後方=100ms、ON35ms。
+  for (float cm:{15.0f,12.5f,10.0f}) {
+    reset(); SD=cm; SR1=cm<=10; SR2=!SR1;
     updateBuzzerState(); assert(pins[13]==LOW);
     fakeNow+=35; updateBuzzerState(); assert(pins[13]==HIGH);
-    fakeNow=1000+(cm==15?600:cm==10?350:100);
+    fakeNow=1000+(cm==15?600:cm==12.5f?350:100);
     updateBuzzerState(); assert(pins[13]==LOW);
     SR1=SR2=IR=false; updateBuzzerState(); assert(pins[13]==HIGH);
   }

@@ -16,11 +16,11 @@
 +#define REAR_ACTIVE_LEVEL   LOW
 +#define BUZZ_ACTIVE_LEVEL   LOW
 +
-+#define FRONT_DANGER_CM     5.0f
++#define FRONT_DANGER_CM    10.0f
 +#define FRONT_WARNING_CM   15.0f
 +#define SENSOR_INTERVAL_MS   60UL
 +#define ECHO_TIMEOUT_US   15000UL
-+#define AVOID_SPEED          26   // 行動制御の10%をPWMへ丸めた値
++#define AVOID_SPEED         100   // 実機で停止に見えないよう回避出力を引き上げる
 +#define BUZZ_SLOW_MS        600UL
 +#define BUZZ_FAST_MS        100UL
 +#define BUZZ_ON_MS           35UL
@@ -48,7 +48,7 @@
 +  digitalWrite(BUZZ_PIN, HIGH);
 +}
 +
-+// 超音波センサ.png：5cm以下をSR1、5cm超～15cm以下をSR2にする。
++// 超音波センサ.png：10cm以下をSR1、10cm超～15cm以下をSR2にする。
 +// 図では省略されている解除処理も行い、前回のTRUEを残さない。
 +void updateUltrasonicState() {
 +  const uint32_t now = millis();
@@ -93,7 +93,7 @@
 +  if (!holdActive || RM == 0 || !distanceValid || (SR1 && IR)) {
 +    M = 0;
 +  } else if (SR1) {
-+    M = 1;  // 前方5cm以下：低速後退
++    M = 1;  // 前方10cm以下：低速後退
 +  } else if (IR) {
 +    M = 2;  // 後方検知：低速前進
 +  } else {
@@ -102,7 +102,7 @@
 +}
 +
 +// 完成ブザーフロー.png：SR1またはIR、またはSR2なら警告音。
-+// 前方5～15cmでは、以前指定された「近いほど速く」を追加する。
++// 前方10～15cmでは、以前指定された「近いほど速く」を追加する。
 +void updateBuzzerState() {
 +  if (!(SR1 || IR || SR2)) {
 +    digitalWrite(BUZZ_PIN, HIGH);
