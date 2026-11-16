@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-11-16T01:20:44.793Z",
+  "updatedAt": "2026-11-16T02:34:49.047Z",
   "records": [
     {
       "id": "LATEST-CODE",
@@ -2333,6 +2333,33 @@
       "shared": false,
       "created": "2026-11-15T16:26:20.212Z",
       "updated": "2026-11-16T01:20:44.793Z"
+    },
+    {
+      "id": "SHARED-ae8277ca-d98e-4c95-bf70-3b98f7a51ea4",
+      "group_id": "SHARED-ae8277ca-d98e-4c95-bf70-3b98f7a51ea4",
+      "name": "単体テストサンプル-20261116T023238Z-1-001.zip",
+      "title": "単体テストサンプル-20261116T023238Z-1-001.zip",
+      "category": "13_その他",
+      "description": "サイトから公開保存した原本",
+      "size": 10107,
+      "created": "2026-11-16T02:33:44.285Z",
+      "visibility": "public",
+      "shared": true,
+      "publishedAt": "2026-11-16T02:34:47.854Z",
+      "url": "shared/files/07d440bf-3de9-4839-9be0-9e4812cd647d.zip"
+    },
+    {
+      "id": "BACKUP-53cb5a98-6232-4c44-84d8-d15d6f88595a",
+      "group_id": "BACKUP-53cb5a98-6232-4c44-84d8-d15d6f88595a",
+      "name": "osoyoo-shared-2026-11-16T02-34-49-047Z.json",
+      "title": "公開保存データ一式（2026/11/16 11:34:49）",
+      "url": "shared/backups/BACKUP-53cb5a98-6232-4c44-84d8-d15d6f88595a.json",
+      "size": 14218,
+      "created": "2026-11-16T02:34:49.047Z",
+      "category": "12_参考資料",
+      "description": "この公開保存で登録したデータ・添付のJSONバックアップ。別PCでダウンロード・復元できます。",
+      "visibility": "public",
+      "shared": true
     }
   ]
 }
