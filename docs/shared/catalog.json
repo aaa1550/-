@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-11-16T02:34:49.047Z",
+  "updatedAt": "2026-11-16T07:37:09.936Z",
   "records": [
     {
       "id": "LATEST-CODE",
@@ -1753,6 +1753,23 @@
       "visibility": "public",
       "updated": "2026-11-16T01:20:44.793Z",
       "links": "LATEST-CODE, COMPLETE-DESIGN"
+    },
+    {
+      "id": "TC-UNIT-ALL",
+      "kind": "tests",
+      "title": "単体テスト15関数・105件（ホスト模擬）",
+      "category": "単体テスト（ホスト模擬）",
+      "status": "合格",
+      "purpose": "保存した単体テストサンプルのExcel形式で、現行コードの分岐・境界値・スタブ呼び出しを確認する。",
+      "precondition": "前方10cm・回避PWM100・通常PWM180・サーボなし。対象ソース固定版04d73faf9bcff6b2040f9e3b0d16825a374071cc。GPIO、時刻、IRremote、pulseInをスタブ化。",
+      "steps": "同梱tests/unit_tests.cppをg++ -std=c++11 -Wall -Wextra -Werrorでコンパイルし、105件を実行。各ケース前に初期化。ExcelのK:Qに期待値、S:Yに実行値、Zに一致判定を記録。",
+      "expected": "15関数105パターンで全期待値一致。10/15cm、250ms、100ms、ブザーON35ms等の境界値を含む。",
+      "actual": "TOTAL=105 FAILED=0。すべてホスト模擬テストの結果。実機試験は未実施。ユーザー報告の後方赤外線検知が遅く接触する事象は未解決として明記。",
+      "notes": "Excelの数式は期待値と実行値の一致を判定する。入力セルを変えてもC++は自動実行されない。実機の合格には使用しない。",
+      "content": "単体テスト完成版Excelと再実行用のソース・スタブ・結果ログを登録。生産コードやピン設定は変更していない。",
+      "links": "UNIT-XLSX, UNIT-ZIP, UNIT-README, LATEST-CODE",
+      "visibility": "public",
+      "updated": "2026-11-16T07:37:09.936Z"
     }
   ],
   "files": [
@@ -2360,6 +2377,45 @@
       "description": "この公開保存で登録したデータ・添付のJSONバックアップ。別PCでダウンロード・復元できます。",
       "visibility": "public",
       "shared": true
+    },
+    {
+      "id": "UNIT-XLSX",
+      "group_id": "UNIT-XLSX",
+      "title": "単体テスト完成版（15関数・105パターン）",
+      "name": "単体テスト_完成版.xlsx",
+      "url": "testing/CompletedObstacleCar/UnitTests.xlsx",
+      "size": 107324,
+      "category": "06_テスト仕様書",
+      "description": "保存したExcelの形式で作成。15関数105件すべてホスト模擬で一致。実機の赤外線検知遅延・接触は未解決。",
+      "created": "2026-11-16T07:37:09.936Z",
+      "visibility": "public",
+      "shared": false
+    },
+    {
+      "id": "UNIT-ZIP",
+      "group_id": "UNIT-ZIP",
+      "title": "単体テスト・Excelと再実行コード一式",
+      "name": "CompletedObstacleCar_UnitTests.zip",
+      "url": "testing/CompletedObstacleCar/CompletedObstacleCar_UnitTests.zip",
+      "size": 97493,
+      "category": "07_テスト結果",
+      "description": "保存したExcelの形式で作成。15関数105件すべてホスト模擬で一致。実機の赤外線検知遅延・接触は未解決。",
+      "created": "2026-11-16T07:37:09.936Z",
+      "visibility": "public",
+      "shared": false
+    },
+    {
+      "id": "UNIT-README",
+      "group_id": "UNIT-README",
+      "title": "単体テストの読み方・再実行手順",
+      "name": "README.md",
+      "url": "testing/CompletedObstacleCar/README.md",
+      "size": 3319,
+      "category": "07_テスト結果",
+      "description": "保存したExcelの形式で作成。15関数105件すべてホスト模擬で一致。実機の赤外線検知遅延・接触は未解決。",
+      "created": "2026-11-16T07:37:09.936Z",
+      "visibility": "public",
+      "shared": false
     }
   ]
 }

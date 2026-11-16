@@ -1,0 +1,655 @@
+{
+  "total": 105,
+  "functions": 15,
+  "failed": 0,
+  "sheets": [
+    "loop",
+    "stopMotors",
+    "cancelMovement",
+    "checkHoldTimeout",
+    "getDirection",
+    "sameRemote",
+    "readRemote",
+    "driveMotors",
+    "setupObstacleDetection",
+    "updateUltrasonicState",
+    "updateRearInfraredState",
+    "updateVehicleState",
+    "updateBuzzerState",
+    "applyObstacleMovement",
+    "setup"
+  ],
+  "source": "https://github.com/aaa1550/-/blob/04d73faf9bcff6b2040f9e3b0d16825a374071cc/docs/code/CompletedObstacleCar/CompletedObstacleCar.ino",
+  "validation": [
+    {
+      "sheet": "main",
+      "range": "Z16",
+      "expected": "合格（模擬）",
+      "id": "UT-95"
+    },
+    {
+      "sheet": "main",
+      "range": "Z18",
+      "expected": "合格（模擬）",
+      "id": "UT-96"
+    },
+    {
+      "sheet": "main",
+      "range": "Z20",
+      "expected": "合格（模擬）",
+      "id": "UT-97"
+    },
+    {
+      "sheet": "main",
+      "range": "Z22",
+      "expected": "合格（模擬）",
+      "id": "UT-98"
+    },
+    {
+      "sheet": "main",
+      "range": "Z24",
+      "expected": "合格（模擬）",
+      "id": "UT-99"
+    },
+    {
+      "sheet": "main",
+      "range": "Z26",
+      "expected": "合格（模擬）",
+      "id": "UT-100"
+    },
+    {
+      "sheet": "main",
+      "range": "Z28",
+      "expected": "合格（模擬）",
+      "id": "UT-101"
+    },
+    {
+      "sheet": "main",
+      "range": "Z30",
+      "expected": "合格（模擬）",
+      "id": "UT-102"
+    },
+    {
+      "sheet": "main",
+      "range": "Z32",
+      "expected": "合格（模擬）",
+      "id": "UT-103"
+    },
+    {
+      "sheet": "main",
+      "range": "Z34",
+      "expected": "合格（模擬）",
+      "id": "UT-104"
+    },
+    {
+      "sheet": "main",
+      "range": "Z36",
+      "expected": "合格（模擬）",
+      "id": "UT-105"
+    },
+    {
+      "sheet": "stopMotors",
+      "range": "Z16",
+      "expected": "合格（模擬）",
+      "id": "UT-1"
+    },
+    {
+      "sheet": "stopMotors",
+      "range": "Z18",
+      "expected": "合格（模擬）",
+      "id": "UT-2"
+    },
+    {
+      "sheet": "stopMotors",
+      "range": "Z20",
+      "expected": "合格（模擬）",
+      "id": "UT-3"
+    },
+    {
+      "sheet": "cancelMovement",
+      "range": "Z16",
+      "expected": "合格（模擬）",
+      "id": "UT-4"
+    },
+    {
+      "sheet": "checkHoldTimeout",
+      "range": "Z16",
+      "expected": "合格（模擬）",
+      "id": "UT-5"
+    },
+    {
+      "sheet": "checkHoldTimeout",
+      "range": "Z18",
+      "expected": "合格（模擬）",
+      "id": "UT-6"
+    },
+    {
+      "sheet": "checkHoldTimeout",
+      "range": "Z20",
+      "expected": "合格（模擬）",
+      "id": "UT-7"
+    },
+    {
+      "sheet": "checkHoldTimeout",
+      "range": "Z22",
+      "expected": "合格（模擬）",
+      "id": "UT-8"
+    },
+    {
+      "sheet": "checkHoldTimeout",
+      "range": "Z24",
+      "expected": "合格（模擬）",
+      "id": "UT-9"
+    },
+    {
+      "sheet": "checkHoldTimeout",
+      "range": "Z26",
+      "expected": "合格（模擬）",
+      "id": "UT-10"
+    },
+    {
+      "sheet": "getDirection",
+      "range": "Z16",
+      "expected": "合格（模擬）",
+      "id": "UT-11"
+    },
+    {
+      "sheet": "getDirection",
+      "range": "Z18",
+      "expected": "合格（模擬）",
+      "id": "UT-12"
+    },
+    {
+      "sheet": "getDirection",
+      "range": "Z20",
+      "expected": "合格（模擬）",
+      "id": "UT-13"
+    },
+    {
+      "sheet": "getDirection",
+      "range": "Z22",
+      "expected": "合格（模擬）",
+      "id": "UT-14"
+    },
+    {
+      "sheet": "getDirection",
+      "range": "Z24",
+      "expected": "合格（模擬）",
+      "id": "UT-15"
+    },
+    {
+      "sheet": "getDirection",
+      "range": "Z26",
+      "expected": "合格（模擬）",
+      "id": "UT-16"
+    },
+    {
+      "sheet": "sameRemote",
+      "range": "Z16",
+      "expected": "合格（模擬）",
+      "id": "UT-17"
+    },
+    {
+      "sheet": "sameRemote",
+      "range": "Z18",
+      "expected": "合格（模擬）",
+      "id": "UT-18"
+    },
+    {
+      "sheet": "sameRemote",
+      "range": "Z20",
+      "expected": "合格（模擬）",
+      "id": "UT-19"
+    },
+    {
+      "sheet": "sameRemote",
+      "range": "Z22",
+      "expected": "合格（模擬）",
+      "id": "UT-20"
+    },
+    {
+      "sheet": "sameRemote",
+      "range": "Z24",
+      "expected": "合格（模擬）",
+      "id": "UT-21"
+    },
+    {
+      "sheet": "sameRemote",
+      "range": "Z26",
+      "expected": "合格（模擬）",
+      "id": "UT-22"
+    },
+    {
+      "sheet": "readRemote",
+      "range": "Z16",
+      "expected": "合格（模擬）",
+      "id": "UT-23"
+    },
+    {
+      "sheet": "readRemote",
+      "range": "Z18",
+      "expected": "合格（模擬）",
+      "id": "UT-24"
+    },
+    {
+      "sheet": "readRemote",
+      "range": "Z20",
+      "expected": "合格（模擬）",
+      "id": "UT-25"
+    },
+    {
+      "sheet": "readRemote",
+      "range": "Z22",
+      "expected": "合格（模擬）",
+      "id": "UT-26"
+    },
+    {
+      "sheet": "readRemote",
+      "range": "Z24",
+      "expected": "合格（模擬）",
+      "id": "UT-27"
+    },
+    {
+      "sheet": "readRemote",
+      "range": "Z26",
+      "expected": "合格（模擬）",
+      "id": "UT-28"
+    },
+    {
+      "sheet": "readRemote",
+      "range": "Z28",
+      "expected": "合格（模擬）",
+      "id": "UT-29"
+    },
+    {
+      "sheet": "readRemote",
+      "range": "Z30",
+      "expected": "合格（模擬）",
+      "id": "UT-30"
+    },
+    {
+      "sheet": "readRemote",
+      "range": "Z32",
+      "expected": "合格（模擬）",
+      "id": "UT-31"
+    },
+    {
+      "sheet": "readRemote",
+      "range": "Z34",
+      "expected": "合格（模擬）",
+      "id": "UT-32"
+    },
+    {
+      "sheet": "readRemote",
+      "range": "Z36",
+      "expected": "合格（模擬）",
+      "id": "UT-33"
+    },
+    {
+      "sheet": "readRemote",
+      "range": "Z38",
+      "expected": "合格（模擬）",
+      "id": "UT-34"
+    },
+    {
+      "sheet": "readRemote",
+      "range": "Z40",
+      "expected": "合格（模擬）",
+      "id": "UT-35"
+    },
+    {
+      "sheet": "readRemote",
+      "range": "Z42",
+      "expected": "合格（模擬）",
+      "id": "UT-36"
+    },
+    {
+      "sheet": "driveMotors",
+      "range": "Z16",
+      "expected": "合格（模擬）",
+      "id": "UT-37"
+    },
+    {
+      "sheet": "driveMotors",
+      "range": "Z18",
+      "expected": "合格（模擬）",
+      "id": "UT-38"
+    },
+    {
+      "sheet": "driveMotors",
+      "range": "Z20",
+      "expected": "合格（模擬）",
+      "id": "UT-39"
+    },
+    {
+      "sheet": "driveMotors",
+      "range": "Z22",
+      "expected": "合格（模擬）",
+      "id": "UT-40"
+    },
+    {
+      "sheet": "driveMotors",
+      "range": "Z24",
+      "expected": "合格（模擬）",
+      "id": "UT-41"
+    },
+    {
+      "sheet": "driveMotors",
+      "range": "Z26",
+      "expected": "合格（模擬）",
+      "id": "UT-42"
+    },
+    {
+      "sheet": "driveMotors",
+      "range": "Z28",
+      "expected": "合格（模擬）",
+      "id": "UT-43"
+    },
+    {
+      "sheet": "driveMotors",
+      "range": "Z30",
+      "expected": "合格（模擬）",
+      "id": "UT-44"
+    },
+    {
+      "sheet": "setupObstacleDetection",
+      "range": "Z16",
+      "expected": "合格（模擬）",
+      "id": "UT-45"
+    },
+    {
+      "sheet": "updateUltrasonicState",
+      "range": "Z16",
+      "expected": "合格（模擬）",
+      "id": "UT-46"
+    },
+    {
+      "sheet": "updateUltrasonicState",
+      "range": "Z18",
+      "expected": "合格（模擬）",
+      "id": "UT-47"
+    },
+    {
+      "sheet": "updateUltrasonicState",
+      "range": "Z20",
+      "expected": "合格（模擬）",
+      "id": "UT-48"
+    },
+    {
+      "sheet": "updateUltrasonicState",
+      "range": "Z22",
+      "expected": "合格（模擬）",
+      "id": "UT-49"
+    },
+    {
+      "sheet": "updateUltrasonicState",
+      "range": "Z24",
+      "expected": "合格（模擬）",
+      "id": "UT-50"
+    },
+    {
+      "sheet": "updateUltrasonicState",
+      "range": "Z26",
+      "expected": "合格（模擬）",
+      "id": "UT-51"
+    },
+    {
+      "sheet": "updateUltrasonicState",
+      "range": "Z28",
+      "expected": "合格（模擬）",
+      "id": "UT-52"
+    },
+    {
+      "sheet": "updateUltrasonicState",
+      "range": "Z30",
+      "expected": "合格（模擬）",
+      "id": "UT-53"
+    },
+    {
+      "sheet": "updateUltrasonicState",
+      "range": "Z32",
+      "expected": "合格（模擬）",
+      "id": "UT-54"
+    },
+    {
+      "sheet": "updateUltrasonicState",
+      "range": "Z34",
+      "expected": "合格（模擬）",
+      "id": "UT-55"
+    },
+    {
+      "sheet": "updateUltrasonicState",
+      "range": "Z36",
+      "expected": "合格（模擬）",
+      "id": "UT-56"
+    },
+    {
+      "sheet": "updateRearInfraredState",
+      "range": "Z16",
+      "expected": "合格（模擬）",
+      "id": "UT-57"
+    },
+    {
+      "sheet": "updateRearInfraredState",
+      "range": "Z18",
+      "expected": "合格（模擬）",
+      "id": "UT-58"
+    },
+    {
+      "sheet": "updateRearInfraredState",
+      "range": "Z20",
+      "expected": "合格（模擬）",
+      "id": "UT-59"
+    },
+    {
+      "sheet": "updateRearInfraredState",
+      "range": "Z22",
+      "expected": "合格（模擬）",
+      "id": "UT-60"
+    },
+    {
+      "sheet": "updateVehicleState",
+      "range": "Z16",
+      "expected": "合格（模擬）",
+      "id": "UT-61"
+    },
+    {
+      "sheet": "updateVehicleState",
+      "range": "Z18",
+      "expected": "合格（模擬）",
+      "id": "UT-62"
+    },
+    {
+      "sheet": "updateVehicleState",
+      "range": "Z20",
+      "expected": "合格（模擬）",
+      "id": "UT-63"
+    },
+    {
+      "sheet": "updateVehicleState",
+      "range": "Z22",
+      "expected": "合格（模擬）",
+      "id": "UT-64"
+    },
+    {
+      "sheet": "updateVehicleState",
+      "range": "Z24",
+      "expected": "合格（模擬）",
+      "id": "UT-65"
+    },
+    {
+      "sheet": "updateVehicleState",
+      "range": "Z26",
+      "expected": "合格（模擬）",
+      "id": "UT-66"
+    },
+    {
+      "sheet": "updateVehicleState",
+      "range": "Z28",
+      "expected": "合格（模擬）",
+      "id": "UT-67"
+    },
+    {
+      "sheet": "updateVehicleState",
+      "range": "Z30",
+      "expected": "合格（模擬）",
+      "id": "UT-68"
+    },
+    {
+      "sheet": "updateVehicleState",
+      "range": "Z32",
+      "expected": "合格（模擬）",
+      "id": "UT-69"
+    },
+    {
+      "sheet": "updateVehicleState",
+      "range": "Z34",
+      "expected": "合格（模擬）",
+      "id": "UT-70"
+    },
+    {
+      "sheet": "updateVehicleState",
+      "range": "Z36",
+      "expected": "合格（模擬）",
+      "id": "UT-71"
+    },
+    {
+      "sheet": "updateBuzzerState",
+      "range": "Z16",
+      "expected": "合格（模擬）",
+      "id": "UT-72"
+    },
+    {
+      "sheet": "updateBuzzerState",
+      "range": "Z18",
+      "expected": "合格（模擬）",
+      "id": "UT-73"
+    },
+    {
+      "sheet": "updateBuzzerState",
+      "range": "Z20",
+      "expected": "合格（模擬）",
+      "id": "UT-74"
+    },
+    {
+      "sheet": "updateBuzzerState",
+      "range": "Z22",
+      "expected": "合格（模擬）",
+      "id": "UT-75"
+    },
+    {
+      "sheet": "updateBuzzerState",
+      "range": "Z24",
+      "expected": "合格（模擬）",
+      "id": "UT-76"
+    },
+    {
+      "sheet": "updateBuzzerState",
+      "range": "Z26",
+      "expected": "合格（模擬）",
+      "id": "UT-77"
+    },
+    {
+      "sheet": "updateBuzzerState",
+      "range": "Z28",
+      "expected": "合格（模擬）",
+      "id": "UT-78"
+    },
+    {
+      "sheet": "updateBuzzerState",
+      "range": "Z30",
+      "expected": "合格（模擬）",
+      "id": "UT-79"
+    },
+    {
+      "sheet": "updateBuzzerState",
+      "range": "Z32",
+      "expected": "合格（模擬）",
+      "id": "UT-80"
+    },
+    {
+      "sheet": "updateBuzzerState",
+      "range": "Z34",
+      "expected": "合格（模擬）",
+      "id": "UT-81"
+    },
+    {
+      "sheet": "updateBuzzerState",
+      "range": "Z36",
+      "expected": "合格（模擬）",
+      "id": "UT-82"
+    },
+    {
+      "sheet": "updateBuzzerState",
+      "range": "Z38",
+      "expected": "合格（模擬）",
+      "id": "UT-83"
+    },
+    {
+      "sheet": "applyObstacleMovement",
+      "range": "Z16",
+      "expected": "合格（模擬）",
+      "id": "UT-84"
+    },
+    {
+      "sheet": "applyObstacleMovement",
+      "range": "Z18",
+      "expected": "合格（模擬）",
+      "id": "UT-85"
+    },
+    {
+      "sheet": "applyObstacleMovement",
+      "range": "Z20",
+      "expected": "合格（模擬）",
+      "id": "UT-86"
+    },
+    {
+      "sheet": "applyObstacleMovement",
+      "range": "Z22",
+      "expected": "合格（模擬）",
+      "id": "UT-87"
+    },
+    {
+      "sheet": "applyObstacleMovement",
+      "range": "Z24",
+      "expected": "合格（模擬）",
+      "id": "UT-88"
+    },
+    {
+      "sheet": "applyObstacleMovement",
+      "range": "Z26",
+      "expected": "合格（模擬）",
+      "id": "UT-89"
+    },
+    {
+      "sheet": "applyObstacleMovement",
+      "range": "Z28",
+      "expected": "合格（模擬）",
+      "id": "UT-90"
+    },
+    {
+      "sheet": "applyObstacleMovement",
+      "range": "Z30",
+      "expected": "合格（模擬）",
+      "id": "UT-91"
+    },
+    {
+      "sheet": "applyObstacleMovement",
+      "range": "Z32",
+      "expected": "合格（模擬）",
+      "id": "UT-92"
+    },
+    {
+      "sheet": "applyObstacleMovement",
+      "range": "Z34",
+      "expected": "合格（模擬）",
+      "id": "UT-93"
+    },
+    {
+      "sheet": "setup",
+      "range": "Z16",
+      "expected": "合格（模擬）",
+      "id": "UT-94"
+    }
+  ]
+}
