@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-11-17T01:45:18.966Z",
+  "updatedAt": "2026-11-17T01:53:35.247Z",
   "records": [
     {
       "id": "LATEST-CODE",
@@ -1767,9 +1767,9 @@
       "actual": "TOTAL=105 FAILED=0。すべてホスト模擬テストの結果。実機試験は未実施。ユーザー報告の後方赤外線検知が遅く接触する事象は未解決として明記。",
       "notes": "Excelの数式は期待値と実行値の一致を判定する。入力セルを変えてもC++は自動実行されない。実機の合格には使用しない。",
       "content": "サイト閲覧版にも全105件の入力・期待値・実行出力・判定を掲載。テスト管理には個別ケース105件を登録。",
-      "links": "UNIT-XLSX-TEMPLATE, UNIT-REPORT, UNIT-XLSX, UNIT-ZIP, UNIT-README, LATEST-CODE",
+      "links": "UNIT-TEMPLATE-WEB, UNIT-XLSX-TEMPLATE, UNIT-REPORT, UNIT-XLSX, UNIT-ZIP, UNIT-README, LATEST-CODE",
       "visibility": "public",
-      "updated": "2026-11-17T01:45:18.966Z"
+      "updated": "2026-11-17T01:53:35.247Z"
     },
     {
       "id": "UT-1",
@@ -4225,6 +4225,19 @@
       "category": "06_テスト仕様書",
       "description": "元テンプレートのA:R列、初期化・スタブ・黄色の入力・青色の出力・分類見出し・1行1パターンを踏襲。15関数105件。前回のExcelは保持。ホスト模擬のみ、実機未確認。",
       "created": "2026-11-17T01:45:18.966Z",
+      "visibility": "public",
+      "shared": false
+    },
+    {
+      "id": "UNIT-TEMPLATE-WEB",
+      "group_id": "UNIT-TEMPLATE-WEB",
+      "name": "UnitTestsTemplate.html",
+      "title": "単体テスト・テンプレート形式のサイト表示",
+      "url": "testing/CompletedObstacleCar/UnitTestsTemplate.html",
+      "size": 97227,
+      "category": "07_テスト結果",
+      "description": "元テンプレート形式のExcelと同じ列順・配色・1行1パターンで、15関数105件を画面表示。ホスト模擬。実機の接触事象は未解決。",
+      "created": "2026-11-17T01:53:35.247Z",
       "visibility": "public",
       "shared": false
     }
