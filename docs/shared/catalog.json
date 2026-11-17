@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-11-17T15:35:44.448709+09:00",
+  "updatedAt": "2026-11-17T16:21:51.688556+09:00",
   "records": [
     {
       "id": "LATEST-CODE",
@@ -5306,9 +5306,9 @@
       "title": "単体テスト完成版（15関数・105パターン）",
       "name": "単体テスト_完成版.xlsx",
       "url": "testing/CompletedObstacleCar/UnitTests.xlsx",
-      "size": 107324,
+      "size": 109204,
       "category": "06_テスト仕様書",
-      "description": "保存したExcelの形式で作成。15関数105件すべてホスト模擬で一致。実機の赤外線検知遅延・接触は未解決。",
+      "description": "保存したExcelの形式で作成。15関数105件すべてホスト模擬で一致。実機の赤外線検知遅延・接触は未解決。 入出力欄をコードの関数名で表記。引数・戻り値・状態を区別。",
       "created": "2026-11-16T07:37:09.936Z",
       "visibility": "public",
       "shared": false
@@ -5319,9 +5319,9 @@
       "title": "単体テスト・Excelと再実行コード一式",
       "name": "CompletedObstacleCar_UnitTests.zip",
       "url": "testing/CompletedObstacleCar/CompletedObstacleCar_UnitTests.zip",
-      "size": 97493,
+      "size": 156746,
       "category": "07_テスト結果",
-      "description": "保存したExcelの形式で作成。15関数105件すべてホスト模擬で一致。実機の赤外線検知遅延・接触は未解決。",
+      "description": "保存したExcelの形式で作成。15関数105件すべてホスト模擬で一致。実機の赤外線検知遅延・接触は未解決。 入出力欄をコードの関数名で表記。引数・戻り値・状態を区別。",
       "created": "2026-11-16T07:37:09.936Z",
       "visibility": "public",
       "shared": false
@@ -5358,9 +5358,9 @@
       "title": "単体テスト・元テンプレート形式版（別ファイル）",
       "name": "単体テスト_テンプレート準拠版.xlsx",
       "url": "testing/CompletedObstacleCar/UnitTestsTemplate.xlsx",
-      "size": 56538,
+      "size": 57654,
       "category": "06_テスト仕様書",
-      "description": "元テンプレートのA:R列、初期化・スタブ・黄色の入力・青色の出力・分類見出し・1行1パターンを踏襲。15関数105件。前回のExcelは保持。ホスト模擬のみ、実機未確認。",
+      "description": "元テンプレートのA:R列、初期化・スタブ・黄色の入力・青色の出力・分類見出し・1行1パターンを踏襲。15関数105件。前回のExcelは保持。ホスト模擬のみ、実機未確認。 入出力欄をコードの関数名で表記。引数・戻り値・状態を区別。",
       "created": "2026-11-17T01:45:18.966Z",
       "visibility": "public",
       "shared": false
@@ -5371,9 +5371,9 @@
       "name": "UnitTestsTemplate.html",
       "title": "単体テスト・テンプレート形式のサイト表示",
       "url": "testing/CompletedObstacleCar/UnitTestsTemplate.html",
-      "size": 97227,
+      "size": 100251,
       "category": "07_テスト結果",
-      "description": "元テンプレート形式のExcelと同じ列順・配色・1行1パターンで、15関数105件を画面表示。ホスト模擬。実機の接触事象は未解決。",
+      "description": "元テンプレート形式のExcelと同じ列順・配色・1行1パターンで、15関数105件を画面表示。ホスト模擬。実機の接触事象は未解決。 入出力欄をコードの関数名で表記。引数・戻り値・状態を区別。",
       "created": "2026-11-17T01:53:35.247Z",
       "visibility": "public",
       "shared": false
