@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-11-17T02:14:50.296Z",
+  "updatedAt": "2026-11-17T02:35:39.763Z",
   "records": [
     {
       "id": "LATEST-CODE",
@@ -1427,332 +1427,857 @@
     {
       "id": "COMPLETE-FD-01",
       "kind": "detailed",
-      "title": "完成コード＋障害物検知 / stopMotors",
+      "title": "公開テンプレート / stopMotors",
       "function": "stopMotors",
       "functionForm": "void stopMotors()",
-      "overview": "元のまま：左右モーター停止",
-      "processing": "PWMを0にし方向端子をLOWにする。出力中なら逆転待ちの起点を記録。",
+      "overview": "左右モーターを停止し、方向切替の停止時刻を管理する。",
+      "processing": "左右PWMを0、方向端子4本をLOWにする。停止前にどちらかの出力が0以外なら、現在時刻をstoppedAtへ記録し、stopTimingActiveをtrueにする。appliedRightとappliedLeftを0へ更新する。",
       "args": "なし",
-      "returns": "なし",
-      "input": "なし",
-      "output": "左右モーター停止",
+      "returns": "void：戻り値なし。",
+      "input": "int appliedRight, appliedLeft：停止前の左右モーターの符号付き出力。\nピン定義：右PWM D9、左PWM D6、右方向D12/D11、左方向D7/D8。",
+      "output": "PWM値（0～255）：D9とD6へ0を出力する。\nHIGH / LOW：D12・D11・D7・D8をすべてLOWにする。\nint appliedRight, appliedLeft：左右の適用済み出力を0にする。\nuint32_t stoppedAt; bool stopTimingActive：出力中から停止したときだけ、停止時刻と逆転待ちフラグを設定する。",
       "variables": "stopTimingActive / stoppedAt",
-      "calledFunctions": "analogWrite / digitalWrite / millis",
+      "calledFunctions": "analogWrite()\ndigitalWrite()\nmillis()",
       "sourceFile": "CompletedObstacleCar.ino",
-      "content": "元のまま：左右モーター停止\nPWMを0にし方向端子をLOWにする。出力中なら逆転待ちの起点を記録。",
+      "content": "左右モーターを停止し、方向切替の停止時刻を管理する。\n左右PWMを0、方向端子4本をLOWにする。停止前にどちらかの出力が0以外なら、現在時刻をstoppedAtへ記録し、stopTimingActiveをtrueにする。appliedRightとappliedLeftを0へ更新する。",
       "category": "完成コードへの追加版",
       "status": "実機確認待ち",
       "visibility": "public",
-      "updated": "2026-11-16T01:20:44.793Z",
-      "links": "LATEST-CODE, COMPLETE-DESIGN"
+      "updated": "2026-11-17T02:35:39.763Z",
+      "links": "LATEST-CODE, FUNCTION-TEMPLATE-WEB, FUNCTION-TEMPLATE-XLSX",
+      "notes": "既に停止中の場合は停止時刻を更新しない。元の完成コードの関数を維持。",
+      "templateIo": [
+        {
+          "kind": "引数",
+          "form": "—",
+          "content": "引数なし。"
+        },
+        {
+          "kind": "戻り値",
+          "form": "void",
+          "content": "戻り値なし。"
+        },
+        {
+          "kind": "入力",
+          "form": "int appliedRight, appliedLeft",
+          "content": "停止前の左右モーターの符号付き出力。"
+        },
+        {
+          "kind": "入力",
+          "form": "ピン定義",
+          "content": "右PWM D9、左PWM D6、右方向D12/D11、左方向D7/D8。"
+        },
+        {
+          "kind": "出力",
+          "form": "PWM値（0～255）",
+          "content": "D9とD6へ0を出力する。"
+        },
+        {
+          "kind": "出力",
+          "form": "HIGH / LOW",
+          "content": "D12・D11・D7・D8をすべてLOWにする。"
+        },
+        {
+          "kind": "出力",
+          "form": "int appliedRight, appliedLeft",
+          "content": "左右の適用済み出力を0にする。"
+        },
+        {
+          "kind": "出力",
+          "form": "uint32_t stoppedAt; bool stopTimingActive",
+          "content": "出力中から停止したときだけ、停止時刻と逆転待ちフラグを設定する。"
+        }
+      ]
     },
     {
       "id": "COMPLETE-FD-02",
       "kind": "detailed",
-      "title": "完成コード＋障害物検知 / cancelMovement",
+      "title": "公開テンプレート / cancelMovement",
       "function": "cancelMovement",
       "functionForm": "void cancelMovement()",
-      "overview": "元のまま：操作解除",
-      "processing": "requested=STOP、holdActive=falseにしてモーター停止。",
+      "overview": "リモコンの走行指令と長押し状態を解除して停止する。",
+      "processing": "requestedをSTOP、holdActiveをfalseへ変更した後、stopMotors()を呼び出す。停止後の古いリピート信号だけでは走行を再開させない。",
       "args": "なし",
-      "returns": "なし",
-      "input": "なし",
-      "output": "走行解除",
+      "returns": "void：戻り値なし。",
+      "input": "グローバル状態：現在のrequested、holdActiveとモーター状態。",
+      "output": "Direction requested：STOPにする。\nbool holdActive：falseにする。\nモーター端子・管理状態：stopMotors()でPWM0・方向LOWにし、必要に応じ逆転待ち時刻を記録する。",
       "variables": "requested / holdActive",
-      "calledFunctions": "stopMotors",
+      "calledFunctions": "stopMotors()",
       "sourceFile": "CompletedObstacleCar.ino",
-      "content": "元のまま：操作解除\nrequested=STOP、holdActive=falseにしてモーター停止。",
+      "content": "リモコンの走行指令と長押し状態を解除して停止する。\nrequestedをSTOP、holdActiveをfalseへ変更した後、stopMotors()を呼び出す。停止後の古いリピート信号だけでは走行を再開させない。",
       "category": "完成コードへの追加版",
       "status": "実機確認待ち",
       "visibility": "public",
-      "updated": "2026-11-16T01:20:44.793Z",
-      "links": "LATEST-CODE, COMPLETE-DESIGN"
+      "updated": "2026-11-17T02:35:39.763Z",
+      "links": "LATEST-CODE, FUNCTION-TEMPLATE-WEB, FUNCTION-TEMPLATE-XLSX",
+      "notes": "OK停止、受信異常、長押し期限切れで使用する。",
+      "templateIo": [
+        {
+          "kind": "引数",
+          "form": "—",
+          "content": "引数なし。"
+        },
+        {
+          "kind": "戻り値",
+          "form": "void",
+          "content": "戻り値なし。"
+        },
+        {
+          "kind": "入力",
+          "form": "グローバル状態",
+          "content": "現在のrequested、holdActiveとモーター状態。"
+        },
+        {
+          "kind": "出力",
+          "form": "Direction requested",
+          "content": "STOPにする。"
+        },
+        {
+          "kind": "出力",
+          "form": "bool holdActive",
+          "content": "falseにする。"
+        },
+        {
+          "kind": "出力",
+          "form": "モーター端子・管理状態",
+          "content": "stopMotors()でPWM0・方向LOWにし、必要に応じ逆転待ち時刻を記録する。"
+        }
+      ]
     },
     {
       "id": "COMPLETE-FD-03",
       "kind": "detailed",
-      "title": "完成コード＋障害物検知 / checkHoldTimeout",
+      "title": "公開テンプレート / checkHoldTimeout",
       "function": "checkHoldTimeout",
       "functionForm": "void checkHoldTimeout()",
-      "overview": "元のまま：長押し期限確認",
-      "processing": "最終有効受信から250ms以上なら操作解除。",
+      "overview": "長押し信号が250ms途切れた場合に走行を解除する。",
+      "processing": "holdActiveがtrueかつ、uint32_t(millis()−lastReceivedAt)がHOLD_TIMEOUT_MS（250ms）以上ならcancelMovement()を呼ぶ。それ以外は状態を変えない。",
       "args": "なし",
-      "returns": "なし",
-      "input": "lastReceivedAt / millis",
-      "output": "必要なら停止",
+      "returns": "void：戻り値なし。",
+      "input": "bool holdActive; uint32_t lastReceivedAt：長押し有効状態と最終の有効受信時刻（ms）。\nunsigned long millis()：Arduinoの現在時刻（ms）。",
+      "output": "走行指令・モーター状態：期限切れならrequested=STOP、holdActive=false、左右モーター停止。それ以外は変更なし。",
       "variables": "holdActive",
-      "calledFunctions": "cancelMovement",
+      "calledFunctions": "millis()\ncancelMovement()",
       "sourceFile": "CompletedObstacleCar.ino",
-      "content": "元のまま：長押し期限確認\n最終有効受信から250ms以上なら操作解除。",
+      "content": "長押し信号が250ms途切れた場合に走行を解除する。\nholdActiveがtrueかつ、uint32_t(millis()−lastReceivedAt)がHOLD_TIMEOUT_MS（250ms）以上ならcancelMovement()を呼ぶ。それ以外は状態を変えない。",
       "category": "完成コードへの追加版",
       "status": "実機確認待ち",
       "visibility": "public",
-      "updated": "2026-11-16T01:20:44.793Z",
-      "links": "LATEST-CODE, COMPLETE-DESIGN"
+      "updated": "2026-11-17T02:35:39.763Z",
+      "links": "LATEST-CODE, FUNCTION-TEMPLATE-WEB, FUNCTION-TEMPLATE-XLSX",
+      "notes": "uint32_tの差分で時刻の折り返しを扱う。実際の停止にはループ処理時間が加わる場合がある。",
+      "templateIo": [
+        {
+          "kind": "引数",
+          "form": "—",
+          "content": "引数なし。"
+        },
+        {
+          "kind": "戻り値",
+          "form": "void",
+          "content": "戻り値なし。"
+        },
+        {
+          "kind": "入力",
+          "form": "bool holdActive; uint32_t lastReceivedAt",
+          "content": "長押し有効状態と最終の有効受信時刻（ms）。"
+        },
+        {
+          "kind": "入力",
+          "form": "unsigned long millis()",
+          "content": "Arduinoの現在時刻（ms）。"
+        },
+        {
+          "kind": "出力",
+          "form": "走行指令・モーター状態",
+          "content": "期限切れならrequested=STOP、holdActive=false、左右モーター停止。それ以外は変更なし。"
+        }
+      ]
     },
     {
       "id": "COMPLETE-FD-04",
       "kind": "detailed",
-      "title": "完成コード＋障害物検知 / getDirection",
+      "title": "公開テンプレート / getDirection",
       "function": "getDirection",
       "functionForm": "Direction getDirection(uint16_t command)",
-      "overview": "元のまま：キーから方向へ変換",
-      "processing": "上24・下82・右90・左8を方向へ変換。他はSTOP。",
-      "args": "uint16_t command",
-      "returns": "Direction",
-      "input": "リモコンのcommand",
-      "output": "方向",
+      "overview": "受信したボタン値を走行方向へ変換する。",
+      "processing": "commandが24ならFORWARD、82ならBACKWARD、90ならRIGHT、8ならLEFTを返す。それ以外はSTOPを返す。",
+      "args": "uint16_t command：赤外線リモコンから受信したボタン値。",
+      "returns": "Direction：FORWARD／BACKWARD／RIGHT／LEFT／STOP。",
+      "input": "#define IR_*：IR_ADVANCE=24、IR_BACK=82、IR_RIGHT=90、IR_LEFT=8。",
+      "output": "外部出力なし。戻り値のみ。",
       "variables": "なし",
       "calledFunctions": "なし",
       "sourceFile": "CompletedObstacleCar.ino",
-      "content": "元のまま：キーから方向へ変換\n上24・下82・右90・左8を方向へ変換。他はSTOP。",
+      "content": "受信したボタン値を走行方向へ変換する。\ncommandが24ならFORWARD、82ならBACKWARD、90ならRIGHT、8ならLEFTを返す。それ以外はSTOPを返す。",
       "category": "完成コードへの追加版",
       "status": "実機確認待ち",
       "visibility": "public",
-      "updated": "2026-11-16T01:20:44.793Z",
-      "links": "LATEST-CODE, COMPLETE-DESIGN"
+      "updated": "2026-11-17T02:35:39.763Z",
+      "links": "LATEST-CODE, FUNCTION-TEMPLATE-WEB, FUNCTION-TEMPLATE-XLSX",
+      "notes": "OK（28）もこの関数ではSTOPとなるが、readRemote()が先に停止処理を行う。",
+      "templateIo": [
+        {
+          "kind": "引数",
+          "form": "uint16_t command",
+          "content": "赤外線リモコンから受信したボタン値。"
+        },
+        {
+          "kind": "戻り値",
+          "form": "Direction",
+          "content": "FORWARD／BACKWARD／RIGHT／LEFT／STOP。"
+        },
+        {
+          "kind": "入力",
+          "form": "#define IR_*",
+          "content": "IR_ADVANCE=24、IR_BACK=82、IR_RIGHT=90、IR_LEFT=8。"
+        },
+        {
+          "kind": "出力",
+          "form": "—",
+          "content": "外部・グローバル状態への出力なし。戻り値のみ。"
+        }
+      ]
     },
     {
       "id": "COMPLETE-FD-05",
       "kind": "detailed",
-      "title": "完成コード＋障害物検知 / sameRemote",
+      "title": "公開テンプレート / sameRemote",
       "function": "sameRemote",
       "functionForm": "bool sameRemote(uint16_t address, decode_type_t protocol)",
-      "overview": "元のまま：送信元照合",
-      "processing": "アドレス一致かつプロトコル一致を判定。NECとNEC2は同等。",
-      "args": "address / protocol",
-      "returns": "bool",
-      "input": "現在と前回の送信元",
-      "output": "一致判定",
+      "overview": "現在の受信信号が前回と同じ送信元かを判定する。",
+      "processing": "addressがlastAddressと一致し、protocolがlastProtocolと同一ならtrueを返す。NECとNEC2の組合せも同じ方式として扱う。それ以外はfalse。",
+      "args": "uint16_t address：今回受信した送信元アドレス。\ndecode_type_t protocol：今回受信した通信方式。",
+      "returns": "bool：同一送信元ならtrue、異なる場合はfalse。",
+      "input": "uint16_t lastAddress; decode_type_t lastProtocol：前回の有効な方向受信で記録した送信元。",
+      "output": "外部出力なし。戻り値のみ。",
       "variables": "lastAddress / lastProtocol",
       "calledFunctions": "なし",
       "sourceFile": "CompletedObstacleCar.ino",
-      "content": "元のまま：送信元照合\nアドレス一致かつプロトコル一致を判定。NECとNEC2は同等。",
+      "content": "現在の受信信号が前回と同じ送信元かを判定する。\naddressがlastAddressと一致し、protocolがlastProtocolと同一ならtrueを返す。NECとNEC2の組合せも同じ方式として扱う。それ以外はfalse。",
       "category": "完成コードへの追加版",
       "status": "実機確認待ち",
       "visibility": "public",
-      "updated": "2026-11-16T01:20:44.793Z",
-      "links": "LATEST-CODE, COMPLETE-DESIGN"
+      "updated": "2026-11-17T02:35:39.763Z",
+      "links": "LATEST-CODE, FUNCTION-TEMPLATE-WEB, FUNCTION-TEMPLATE-XLSX",
+      "notes": "送信元照合のみを行い、長押し期限やボタン値の照合はreadRemote()が行う。",
+      "templateIo": [
+        {
+          "kind": "引数",
+          "form": "uint16_t address",
+          "content": "今回受信した送信元アドレス。"
+        },
+        {
+          "kind": "引数",
+          "form": "decode_type_t protocol",
+          "content": "今回受信した通信方式。"
+        },
+        {
+          "kind": "戻り値",
+          "form": "bool",
+          "content": "同一送信元ならtrue、異なる場合はfalse。"
+        },
+        {
+          "kind": "入力",
+          "form": "uint16_t lastAddress; decode_type_t lastProtocol",
+          "content": "前回の有効な方向受信で記録した送信元。"
+        },
+        {
+          "kind": "出力",
+          "form": "—",
+          "content": "外部・グローバル状態への出力なし。戻り値のみ。"
+        }
+      ]
     },
     {
       "id": "COMPLETE-FD-06",
       "kind": "detailed",
-      "title": "完成コード＋障害物検知 / readRemote",
+      "title": "公開テンプレート / readRemote",
       "function": "readRemote",
       "functionForm": "void readRemote()",
-      "overview": "元のまま：リモコン受信",
-      "processing": "長押し期限→受信→異常/OK停止→同じ送信元の繰り返し→新しい方向。",
+      "overview": "リモコンの新規操作・長押し継続・停止を受け付ける。",
+      "processing": "最初に長押し期限を確認する。受信がなければ終了。受信データを退避して受信を再開し、未知方式・オーバーフロー・パリティ異常・OKなら停止する。リピートは長押し有効、同じボタン、同じ送信元のときだけ受信時刻を延長する。新規の方向キーなら指令と受信元を記録する。",
       "args": "なし",
-      "returns": "なし",
-      "input": "IR受信D4",
-      "output": "requested / holdActive更新",
+      "returns": "void：戻り値なし。",
+      "input": "IrReceiver.decodedIRData：command、address、protocol、flags。受信ピンD4。\nbool / uint16_t / decode_type_t / uint32_t：holdActive、lastCommand、lastAddress、lastProtocol、lastReceivedAt。",
+      "output": "Direction requested; bool holdActive：新規方向操作を設定する。OK・異常・期限切れなら指令と長押しを解除する。\nuint32_t lastReceivedAt：新規方向または有効リピートを受けた現在時刻に更新する。\nuint16_t lastCommand, lastAddress; decode_type_t lastProtocol：新規の有効方向操作の受信元とボタンを記録する。\n受信器・モーター：resume()で次の受信へ戻す。停止条件ではcancelMovement()経由でモーター停止。",
       "variables": "lastCommand / lastAddress / lastProtocol",
-      "calledFunctions": "checkHoldTimeout / cancelMovement / sameRemote / getDirection",
+      "calledFunctions": "checkHoldTimeout()\nIrReceiver.decode()\nIrReceiver.resume()\ncancelMovement()\nsameRemote()\ngetDirection()\nmillis()",
       "sourceFile": "CompletedObstacleCar.ino",
-      "content": "元のまま：リモコン受信\n長押し期限→受信→異常/OK停止→同じ送信元の繰り返し→新しい方向。",
+      "content": "リモコンの新規操作・長押し継続・停止を受け付ける。\n最初に長押し期限を確認する。受信がなければ終了。受信データを退避して受信を再開し、未知方式・オーバーフロー・パリティ異常・OKなら停止する。リピートは長押し有効、同じボタン、同じ送信元のときだけ受信時刻を延長する。新規の方向キーなら指令と受信元を記録する。",
       "category": "完成コードへの追加版",
       "status": "実機確認待ち",
       "visibility": "public",
-      "updated": "2026-11-16T01:20:44.793Z",
-      "links": "LATEST-CODE, COMPLETE-DESIGN"
+      "updated": "2026-11-17T02:35:39.763Z",
+      "links": "LATEST-CODE, FUNCTION-TEMPLATE-WEB, FUNCTION-TEMPLATE-XLSX",
+      "notes": "未使用キー・別送信元や別ボタンのリピートでは期限を延長しない。元の完成コードを維持。",
+      "templateIo": [
+        {
+          "kind": "引数",
+          "form": "—",
+          "content": "引数なし。"
+        },
+        {
+          "kind": "戻り値",
+          "form": "void",
+          "content": "戻り値なし。"
+        },
+        {
+          "kind": "入力",
+          "form": "IrReceiver.decodedIRData",
+          "content": "command、address、protocol、flags。受信ピンD4。"
+        },
+        {
+          "kind": "入力",
+          "form": "bool / uint16_t / decode_type_t / uint32_t",
+          "content": "holdActive、lastCommand、lastAddress、lastProtocol、lastReceivedAt。"
+        },
+        {
+          "kind": "出力",
+          "form": "Direction requested; bool holdActive",
+          "content": "新規方向操作を設定する。OK・異常・期限切れなら指令と長押しを解除する。"
+        },
+        {
+          "kind": "出力",
+          "form": "uint32_t lastReceivedAt",
+          "content": "新規方向または有効リピートを受けた現在時刻に更新する。"
+        },
+        {
+          "kind": "出力",
+          "form": "uint16_t lastCommand, lastAddress; decode_type_t lastProtocol",
+          "content": "新規の有効方向操作の受信元とボタンを記録する。"
+        },
+        {
+          "kind": "出力",
+          "form": "受信器・モーター",
+          "content": "resume()で次の受信へ戻す。停止条件ではcancelMovement()経由でモーター停止。"
+        }
+      ]
     },
     {
       "id": "COMPLETE-FD-07",
       "kind": "detailed",
-      "title": "完成コード＋障害物検知 / driveMotors",
+      "title": "公開テンプレート / driveMotors",
       "function": "driveMotors",
       "functionForm": "void driveMotors()",
-      "overview": "元のまま：通常走行",
-      "processing": "長押し中のrequestedをPWM180へ変換。逆転時は100ms停止。",
+      "overview": "長押し中の通常走行をPWM180で実行する。",
+      "processing": "長押し無効またはSTOPなら停止する。前進・後退・右旋回・左旋回から左右の符号付き出力を求める。適用済み出力と回転方向が逆なら一度停止する。停止後100ms未満なら出力せず終了し、100ms以上で方向端子とPWMを設定する。",
       "args": "なし",
-      "returns": "なし",
-      "input": "requested / holdActive",
-      "output": "左右モーターPWM180または停止",
+      "returns": "void：戻り値なし。",
+      "input": "Direction requested; bool holdActive：リモコンの方向指令と長押し有効状態。\nint / bool / uint32_t：appliedRight、appliedLeft、stopTimingActive、stoppedAt。MOVE_SPEEDとTURN_SPEEDは180。",
+      "output": "PWM値（0～255）：右D9・左D6へ180、または停止時0を出力する。\nHIGH / LOW：右D12/D11・左D7/D8で回転方向を設定する。\nint appliedRight, appliedLeft：前進(+180,+180)、後退(−180,−180)、右(−180,+180)、左(+180,−180)。\nbool stopTimingActive; uint32_t stoppedAt：逆転待ちを設定し、100ms経過したら待機フラグを解除する。",
       "variables": "appliedRight / appliedLeft",
-      "calledFunctions": "stopMotors / analogWrite / digitalWrite",
+      "calledFunctions": "stopMotors()\nmillis()\ndigitalWrite()\nanalogWrite()",
       "sourceFile": "CompletedObstacleCar.ino",
-      "content": "元のまま：通常走行\n長押し中のrequestedをPWM180へ変換。逆転時は100ms停止。",
+      "content": "長押し中の通常走行をPWM180で実行する。\n長押し無効またはSTOPなら停止する。前進・後退・右旋回・左旋回から左右の符号付き出力を求める。適用済み出力と回転方向が逆なら一度停止する。停止後100ms未満なら出力せず終了し、100ms以上で方向端子とPWMを設定する。",
       "category": "完成コードへの追加版",
       "status": "実機確認待ち",
       "visibility": "public",
-      "updated": "2026-11-16T01:20:44.793Z",
-      "links": "LATEST-CODE, COMPLETE-DESIGN"
+      "updated": "2026-11-17T02:35:39.763Z",
+      "links": "LATEST-CODE, FUNCTION-TEMPLATE-WEB, FUNCTION-TEMPLATE-XLSX",
+      "notes": "障害物回避が不要な場合にloop()から呼ぶ。通常速度は元コードの180を維持。",
+      "templateIo": [
+        {
+          "kind": "引数",
+          "form": "—",
+          "content": "引数なし。"
+        },
+        {
+          "kind": "戻り値",
+          "form": "void",
+          "content": "戻り値なし。"
+        },
+        {
+          "kind": "入力",
+          "form": "Direction requested; bool holdActive",
+          "content": "リモコンの方向指令と長押し有効状態。"
+        },
+        {
+          "kind": "入力",
+          "form": "int / bool / uint32_t",
+          "content": "appliedRight、appliedLeft、stopTimingActive、stoppedAt。MOVE_SPEEDとTURN_SPEEDは180。"
+        },
+        {
+          "kind": "出力",
+          "form": "PWM値（0～255）",
+          "content": "右D9・左D6へ180、または停止時0を出力する。"
+        },
+        {
+          "kind": "出力",
+          "form": "HIGH / LOW",
+          "content": "右D12/D11・左D7/D8で回転方向を設定する。"
+        },
+        {
+          "kind": "出力",
+          "form": "int appliedRight, appliedLeft",
+          "content": "前進(+180,+180)、後退(−180,−180)、右(−180,+180)、左(+180,−180)。"
+        },
+        {
+          "kind": "出力",
+          "form": "bool stopTimingActive; uint32_t stoppedAt",
+          "content": "逆転待ちを設定し、100ms経過したら待機フラグを解除する。"
+        }
+      ]
     },
     {
       "id": "COMPLETE-FD-08",
       "kind": "detailed",
-      "title": "完成コード＋障害物検知 / setupObstacleDetection",
+      "title": "公開テンプレート / setupObstacleDetection",
       "function": "setupObstacleDetection",
       "functionForm": "void setupObstacleDetection()",
-      "overview": "追加：センサー初期化",
-      "processing": "超音波Trigを出力、Echoと後方D0/D2を入力にし、ブザーOFF。",
+      "overview": "超音波・後方赤外線・ブザーの端子を初期化する。",
+      "processing": "TrigをLOWにしてOUTPUT、Echoと後方左右の端子をINPUTに設定する。ブザー信号をHIGH（OFF）にする。",
       "args": "なし",
-      "returns": "なし",
-      "input": "なし",
-      "output": "センサー端子初期化",
+      "returns": "void：戻り値なし。",
+      "input": "#define ピン設定：Trig D10、Echo D3、後方左D0、後方右D2、ブザーD13。",
+      "output": "OUTPUT / INPUT：Trig D10を出力、Echo D3と後方D0/D2を入力へ設定する。\nHIGH / LOW：Trig D10=LOW、ブザーD13=HIGH。",
       "variables": "なし",
-      "calledFunctions": "pinMode / digitalWrite",
+      "calledFunctions": "digitalWrite()\npinMode()",
       "sourceFile": "CompletedObstacleCar.ino",
-      "content": "追加：センサー初期化\n超音波Trigを出力、Echoと後方D0/D2を入力にし、ブザーOFF。",
+      "content": "超音波・後方赤外線・ブザーの端子を初期化する。\nTrigをLOWにしてOUTPUT、Echoと後方左右の端子をINPUTに設定する。ブザー信号をHIGH（OFF）にする。",
       "category": "完成コードへの追加版",
       "status": "実機確認待ち",
       "visibility": "public",
-      "updated": "2026-11-16T01:20:44.793Z",
-      "links": "LATEST-CODE, COMPLETE-DESIGN"
+      "updated": "2026-11-17T02:35:39.763Z",
+      "links": "LATEST-CODE, FUNCTION-TEMPLATE-WEB, FUNCTION-TEMPLATE-XLSX",
+      "notes": "setup()が先にブザーD13をOUTPUTへ設定する。D0を使うためSerialは使用しない。サーボ処理なし。",
+      "templateIo": [
+        {
+          "kind": "引数",
+          "form": "—",
+          "content": "引数なし。"
+        },
+        {
+          "kind": "戻り値",
+          "form": "void",
+          "content": "戻り値なし。"
+        },
+        {
+          "kind": "入力",
+          "form": "#define ピン設定",
+          "content": "Trig D10、Echo D3、後方左D0、後方右D2、ブザーD13。"
+        },
+        {
+          "kind": "出力",
+          "form": "OUTPUT / INPUT",
+          "content": "Trig D10を出力、Echo D3と後方D0/D2を入力へ設定する。"
+        },
+        {
+          "kind": "出力",
+          "form": "HIGH / LOW",
+          "content": "Trig D10=LOW、ブザーD13=HIGH。"
+        }
+      ]
     },
     {
       "id": "COMPLETE-FD-09",
       "kind": "detailed",
-      "title": "完成コード＋障害物検知 / updateUltrasonicState",
+      "title": "公開テンプレート / updateUltrasonicState",
       "function": "updateUltrasonicState",
       "functionForm": "void updateUltrasonicState()",
-      "overview": "追加：前方距離とSR1/SR2",
-      "processing": "60msごとに距離SDを測る。10cm以下SR1、10cm超～15cm以下SR2。無応答は無効。両フラグを毎回解除更新。",
+      "overview": "前方距離を測定し、10cm・15cmの検知状態を更新する。",
+      "processing": "初回または前回から60ms以上で測距する。TrigをLOW 2μs→HIGH 10μs→LOWにし、EchoのHIGH幅を最大15000μs待つ。応答があれば距離SD=echo/58.0cm。10cm以下でSR1=true、10cm超～15cm以下でSR2=trueとする。無応答なら距離無効、SD=−1、両フラグfalse。",
       "args": "なし",
-      "returns": "なし",
-      "input": "Echo D3 / Trig D10",
-      "output": "SD / SR1 / SR2 / distanceValid",
+      "returns": "void：戻り値なし。",
+      "input": "bool sensorStarted; uint32_t lastSensorAt：初回測距の有無、最終測距時刻（ms）。\nunsigned long Echo幅; millis()：Echo D3の応答時間（μs）と現在時刻。",
+      "output": "float SD：前方距離（cm）。無応答時は−1。\nbool distanceValid：応答ありならtrue、無応答ならfalse。\nbool SR1, SR2：SR1：有効距離10cm以下。SR2：有効距離10cm超～15cm以下。毎回解除も更新。\nbool sensorStarted; uint32_t lastSensorAt：測距済みフラグと、今回測距を開始した時刻。\nHIGH / LOW：Trig D10へ測距用パルスを出力する。",
       "variables": "lastSensorAt / sensorStarted",
-      "calledFunctions": "pulseIn / digitalWrite / delayMicroseconds",
+      "calledFunctions": "millis()\ndigitalWrite()\ndelayMicroseconds()\npulseIn()",
       "sourceFile": "CompletedObstacleCar.ino",
-      "content": "追加：前方距離とSR1/SR2\n60msごとに距離SDを測る。10cm以下SR1、10cm超～15cm以下SR2。無応答は無効。両フラグを毎回解除更新。",
+      "content": "前方距離を測定し、10cm・15cmの検知状態を更新する。\n初回または前回から60ms以上で測距する。TrigをLOW 2μs→HIGH 10μs→LOWにし、EchoのHIGH幅を最大15000μs待つ。応答があれば距離SD=echo/58.0cm。10cm以下でSR1=true、10cm超～15cm以下でSR2=trueとする。無応答なら距離無効、SD=−1、両フラグfalse。",
       "category": "完成コードへの追加版",
       "status": "実機確認待ち",
       "visibility": "public",
-      "updated": "2026-11-16T01:20:44.793Z",
-      "links": "LATEST-CODE, COMPLETE-DESIGN"
+      "updated": "2026-11-17T02:35:39.763Z",
+      "links": "LATEST-CODE, FUNCTION-TEMPLATE-WEB, FUNCTION-TEMPLATE-XLSX",
+      "notes": "60ms未満では前回の状態を維持する。測距失敗を障害物なしとは扱わず、車両状態で停止させる。",
+      "templateIo": [
+        {
+          "kind": "引数",
+          "form": "—",
+          "content": "引数なし。"
+        },
+        {
+          "kind": "戻り値",
+          "form": "void",
+          "content": "戻り値なし。"
+        },
+        {
+          "kind": "入力",
+          "form": "bool sensorStarted; uint32_t lastSensorAt",
+          "content": "初回測距の有無、最終測距時刻（ms）。"
+        },
+        {
+          "kind": "入力",
+          "form": "unsigned long Echo幅; millis()",
+          "content": "Echo D3の応答時間（μs）と現在時刻。"
+        },
+        {
+          "kind": "出力",
+          "form": "float SD",
+          "content": "前方距離（cm）。無応答時は−1。"
+        },
+        {
+          "kind": "出力",
+          "form": "bool distanceValid",
+          "content": "応答ありならtrue、無応答ならfalse。"
+        },
+        {
+          "kind": "出力",
+          "form": "bool SR1, SR2",
+          "content": "SR1：有効距離10cm以下。SR2：有効距離10cm超～15cm以下。毎回解除も更新。"
+        },
+        {
+          "kind": "出力",
+          "form": "bool sensorStarted; uint32_t lastSensorAt",
+          "content": "測距済みフラグと、今回測距を開始した時刻。"
+        },
+        {
+          "kind": "出力",
+          "form": "HIGH / LOW",
+          "content": "Trig D10へ測距用パルスを出力する。"
+        }
+      ]
     },
     {
       "id": "COMPLETE-FD-10",
       "kind": "detailed",
-      "title": "完成コード＋障害物検知 / updateRearInfraredState",
+      "title": "公開テンプレート / updateRearInfraredState",
       "function": "updateRearInfraredState",
       "functionForm": "void updateRearInfraredState()",
-      "overview": "追加：後方障害物",
-      "processing": "D0/D2のどちらかがLOWならIR=true、それ以外はfalse。",
+      "overview": "後方左右の赤外線センサーから障害物の有無を判定する。",
+      "processing": "D0またはD2のどちらかがLOWならIR=true、両方HIGHならIR=falseにする。論理ORのため、左がLOWなら右の読取りを省略する。",
       "args": "なし",
-      "returns": "なし",
-      "input": "後方左右センサー",
-      "output": "IR",
+      "returns": "void：戻り値なし。",
+      "input": "HIGH / LOW：後方左D0・後方右D2。LOWを検知ありとして扱う。",
+      "output": "bool IR：後方障害物ありtrue、なしfalse。",
       "variables": "なし",
-      "calledFunctions": "digitalRead",
+      "calledFunctions": "digitalRead()",
       "sourceFile": "CompletedObstacleCar.ino",
-      "content": "追加：後方障害物\nD0/D2のどちらかがLOWならIR=true、それ以外はfalse。",
+      "content": "後方左右の赤外線センサーから障害物の有無を判定する。\nD0またはD2のどちらかがLOWならIR=true、両方HIGHならIR=falseにする。論理ORのため、左がLOWなら右の読取りを省略する。",
       "category": "完成コードへの追加版",
       "status": "実機確認待ち",
       "visibility": "public",
-      "updated": "2026-11-16T01:20:44.793Z",
-      "links": "LATEST-CODE, COMPLETE-DESIGN"
+      "updated": "2026-11-17T02:35:39.763Z",
+      "links": "LATEST-CODE, FUNCTION-TEMPLATE-WEB, FUNCTION-TEMPLATE-XLSX",
+      "notes": "このコードでは検知距離をcm指定しない。実機で検知が遅れて接触する事象が報告されており、未解決。",
+      "templateIo": [
+        {
+          "kind": "引数",
+          "form": "—",
+          "content": "引数なし。"
+        },
+        {
+          "kind": "戻り値",
+          "form": "void",
+          "content": "戻り値なし。"
+        },
+        {
+          "kind": "入力",
+          "form": "HIGH / LOW",
+          "content": "後方左D0・後方右D2。LOWを検知ありとして扱う。"
+        },
+        {
+          "kind": "出力",
+          "form": "bool IR",
+          "content": "後方障害物ありtrue、なしfalse。"
+        }
+      ]
     },
     {
       "id": "COMPLETE-FD-11",
       "kind": "detailed",
-      "title": "完成コード＋障害物検知 / updateVehicleState",
+      "title": "公開テンプレート / updateVehicleState",
       "function": "updateVehicleState",
       "functionForm": "void updateVehicleState()",
-      "overview": "追加：最終状態M判定",
-      "processing": "RMを元のrequestedから作る。解除/無効測距/前後同時ならM0。SR1ならM1、IRならM2、それ以外RM+2。",
+      "overview": "停止・前方回避・後方回避・手動操作の優先順位を決める。",
+      "processing": "長押し期限を再確認し、requestedからRM（停止0・前1・後2・右3・左4）を作る。長押し無効、RM0、距離無効、前後同時検知ならM0。前方SR1ならM1、後方IRならM2、それ以外はM=RM+2として手動状態を選ぶ。",
       "args": "なし",
-      "returns": "なし",
-      "input": "requested / holdActive / SR1 / IR / distanceValid",
-      "output": "RM / M",
+      "returns": "void：戻り値なし。",
+      "input": "Direction requested; bool holdActive：現在の手動指令と長押し状態。\nbool distanceValid, SR1, IR：前方距離の有効性、前方10cm検知、後方検知。",
+      "output": "uint8_t RM：停止0、前進1、後退2、右3、左4。\nuint8_t M：停止0、回避後退1、回避前進2、手動前進3、後退4、右5、左6。\nrequested / holdActive / モーター：内部の期限確認で250ms以上経過していれば操作を解除して停止する。",
       "variables": "なし",
-      "calledFunctions": "checkHoldTimeout",
+      "calledFunctions": "checkHoldTimeout()",
       "sourceFile": "CompletedObstacleCar.ino",
-      "content": "追加：最終状態M判定\nRMを元のrequestedから作る。解除/無効測距/前後同時ならM0。SR1ならM1、IRならM2、それ以外RM+2。",
+      "content": "停止・前方回避・後方回避・手動操作の優先順位を決める。\n長押し期限を再確認し、requestedからRM（停止0・前1・後2・右3・左4）を作る。長押し無効、RM0、距離無効、前後同時検知ならM0。前方SR1ならM1、後方IRならM2、それ以外はM=RM+2として手動状態を選ぶ。",
       "category": "完成コードへの追加版",
       "status": "実機確認待ち",
       "visibility": "public",
-      "updated": "2026-11-16T01:20:44.793Z",
-      "links": "LATEST-CODE, COMPLETE-DESIGN"
+      "updated": "2026-11-17T02:35:39.763Z",
+      "links": "LATEST-CODE, FUNCTION-TEMPLATE-WEB, FUNCTION-TEMPLATE-XLSX",
+      "notes": "回避は長押し有効時のみ。障害物検知が解消すると、長押し中の元の操作へ戻る。回避ラッチなし。",
+      "templateIo": [
+        {
+          "kind": "引数",
+          "form": "—",
+          "content": "引数なし。"
+        },
+        {
+          "kind": "戻り値",
+          "form": "void",
+          "content": "戻り値なし。"
+        },
+        {
+          "kind": "入力",
+          "form": "Direction requested; bool holdActive",
+          "content": "現在の手動指令と長押し状態。"
+        },
+        {
+          "kind": "入力",
+          "form": "bool distanceValid, SR1, IR",
+          "content": "前方距離の有効性、前方10cm検知、後方検知。"
+        },
+        {
+          "kind": "出力",
+          "form": "uint8_t RM",
+          "content": "停止0、前進1、後退2、右3、左4。"
+        },
+        {
+          "kind": "出力",
+          "form": "uint8_t M",
+          "content": "停止0、回避後退1、回避前進2、手動前進3、後退4、右5、左6。"
+        },
+        {
+          "kind": "出力",
+          "form": "requested / holdActive / モーター",
+          "content": "内部の期限確認で250ms以上経過していれば操作を解除して停止する。"
+        }
+      ]
     },
     {
       "id": "COMPLETE-FD-12",
       "kind": "detailed",
-      "title": "完成コード＋障害物検知 / updateBuzzerState",
+      "title": "公開テンプレート / updateBuzzerState",
       "function": "updateBuzzerState",
       "functionForm": "void updateBuzzerState()",
-      "overview": "追加：警告ブザー",
-      "processing": "SR1またはIRは100ms周期、SR2は10～15cmで距離に応じ600～100ms周期。ON35ms。その他OFF。",
+      "overview": "距離と後方検知に応じてブザーの鳴動間隔を変える。",
+      "processing": "SR1・IR・SR2がすべてfalseなら消音する。SR1またはIRなら100ms周期、SR2のみならSDに応じ15cmで600ms、12.5cmで350ms、10cmへ近づくほど100msへ短縮する。各周期の先頭35msだけLOWを出力し、それ以外はHIGHにする。",
       "args": "なし",
-      "returns": "なし",
-      "input": "SD / SR1 / SR2 / IR",
-      "output": "D13 LOWで鳴動",
+      "returns": "void：戻り値なし。",
+      "input": "bool SR1, SR2, IR; float SD：前後の検知状態と前方距離（cm）。\nbool buzzerActive; uint32_t buzzerStartedAt; millis()：鳴動管理状態、周期開始時刻、現在時刻。",
+      "output": "HIGH / LOW（D13）：LOWでブザーON、HIGHでOFF。\nbool buzzerActive; uint32_t buzzerStartedAt：鳴動管理フラグと周期開始時刻を更新する。",
       "variables": "buzzerActive / buzzerStartedAt",
-      "calledFunctions": "millis / digitalWrite",
+      "calledFunctions": "millis()\ndigitalWrite()",
       "sourceFile": "CompletedObstacleCar.ino",
-      "content": "追加：警告ブザー\nSR1またはIRは100ms周期、SR2は10～15cmで距離に応じ600～100ms周期。ON35ms。その他OFF。",
+      "content": "距離と後方検知に応じてブザーの鳴動間隔を変える。\nSR1・IR・SR2がすべてfalseなら消音する。SR1またはIRなら100ms周期、SR2のみならSDに応じ15cmで600ms、12.5cmで350ms、10cmへ近づくほど100msへ短縮する。各周期の先頭35msだけLOWを出力し、それ以外はHIGHにする。",
       "category": "完成コードへの追加版",
       "status": "実機確認待ち",
       "visibility": "public",
-      "updated": "2026-11-16T01:20:44.793Z",
-      "links": "LATEST-CODE, COMPLETE-DESIGN"
+      "updated": "2026-11-17T02:35:39.763Z",
+      "links": "LATEST-CODE, FUNCTION-TEMPLATE-WEB, FUNCTION-TEMPLATE-XLSX",
+      "notes": "delay()を使用しない。停止中でも検知中は鳴る。LOWで鳴るアクティブブザーを想定。",
+      "templateIo": [
+        {
+          "kind": "引数",
+          "form": "—",
+          "content": "引数なし。"
+        },
+        {
+          "kind": "戻り値",
+          "form": "void",
+          "content": "戻り値なし。"
+        },
+        {
+          "kind": "入力",
+          "form": "bool SR1, SR2, IR; float SD",
+          "content": "前後の検知状態と前方距離（cm）。"
+        },
+        {
+          "kind": "入力",
+          "form": "bool buzzerActive; uint32_t buzzerStartedAt; millis()",
+          "content": "鳴動管理状態、周期開始時刻、現在時刻。"
+        },
+        {
+          "kind": "出力",
+          "form": "HIGH / LOW（D13）",
+          "content": "LOWでブザーON、HIGHでOFF。"
+        },
+        {
+          "kind": "出力",
+          "form": "bool buzzerActive; uint32_t buzzerStartedAt",
+          "content": "鳴動管理フラグと周期開始時刻を更新する。"
+        }
+      ]
     },
     {
       "id": "COMPLETE-FD-13",
       "kind": "detailed",
-      "title": "完成コード＋障害物検知 / applyObstacleMovement",
+      "title": "公開テンプレート / applyObstacleMovement",
       "function": "applyObstacleMovement",
       "functionForm": "bool applyObstacleMovement()",
-      "overview": "追加：回避動作",
-      "processing": "M0停止。M1はPWM100で後退、M2はPWM100で前進。逆転前100ms停止。M3～6はfalseを返す。",
+      "overview": "車両状態Mに応じた停止・回避を実行し、通常制御への受け渡しを返す。",
+      "processing": "M0ならstopMotors()を呼びtrue。M1は左右−100で後退、M2は左右+100で前進する。逆転なら停止し、停止後100ms未満は出力せずtrueを返す。100ms経過後に方向とPWM100を設定する。M1/M2以外の非停止モードはfalseを返し、通常制御へ任せる。",
       "args": "なし",
-      "returns": "bool：出力処理済みならtrue",
-      "input": "M / appliedRight / appliedLeft",
-      "output": "回避モーター出力",
+      "returns": "bool：停止・回避・逆転待ちを扱った場合true。通常制御へ任せる場合false。",
+      "input": "uint8_t M：車両状態。0停止、1回避後退、2回避前進、3～6通常走行。\nint / bool / uint32_t：appliedRight、appliedLeft、stopTimingActive、stoppedAt。",
+      "output": "PWM値（0～255）：回避時にD9・D6へ100、停止時に0を出力する。\nHIGH / LOW：回避の前進・後退に合わせてD12/D11/D7/D8を設定する。\nint appliedRight, appliedLeft：M1は左右−100、M2は左右+100へ更新する。\nbool stopTimingActive; uint32_t stoppedAt：逆転の停止時刻と待機完了を管理する。",
       "variables": "stopTimingActive / stoppedAt",
-      "calledFunctions": "stopMotors / millis / analogWrite / digitalWrite",
+      "calledFunctions": "stopMotors()\nmillis()\ndigitalWrite()\nanalogWrite()",
       "sourceFile": "CompletedObstacleCar.ino",
-      "content": "追加：回避動作\nM0停止。M1はPWM100で後退、M2はPWM100で前進。逆転前100ms停止。M3～6はfalseを返す。",
+      "content": "車両状態Mに応じた停止・回避を実行し、通常制御への受け渡しを返す。\nM0ならstopMotors()を呼びtrue。M1は左右−100で後退、M2は左右+100で前進する。逆転なら停止し、停止後100ms未満は出力せずtrueを返す。100ms経過後に方向とPWM100を設定する。M1/M2以外の非停止モードはfalseを返し、通常制御へ任せる。",
       "category": "完成コードへの追加版",
       "status": "実機確認待ち",
       "visibility": "public",
-      "updated": "2026-11-16T01:20:44.793Z",
-      "links": "LATEST-CODE, COMPLETE-DESIGN"
+      "updated": "2026-11-17T02:35:39.763Z",
+      "links": "LATEST-CODE, FUNCTION-TEMPLATE-WEB, FUNCTION-TEMPLATE-XLSX",
+      "notes": "長押し解除・前後同時検知・測距失敗の優先判定は、呼出元のupdateVehicleState()で行う。",
+      "templateIo": [
+        {
+          "kind": "引数",
+          "form": "—",
+          "content": "引数なし。"
+        },
+        {
+          "kind": "戻り値",
+          "form": "bool",
+          "content": "停止・回避・逆転待ちを扱った場合true。通常制御へ任せる場合false。"
+        },
+        {
+          "kind": "入力",
+          "form": "uint8_t M",
+          "content": "車両状態。0停止、1回避後退、2回避前進、3～6通常走行。"
+        },
+        {
+          "kind": "入力",
+          "form": "int / bool / uint32_t",
+          "content": "appliedRight、appliedLeft、stopTimingActive、stoppedAt。"
+        },
+        {
+          "kind": "出力",
+          "form": "PWM値（0～255）",
+          "content": "回避時にD9・D6へ100、停止時に0を出力する。"
+        },
+        {
+          "kind": "出力",
+          "form": "HIGH / LOW",
+          "content": "回避の前進・後退に合わせてD12/D11/D7/D8を設定する。"
+        },
+        {
+          "kind": "出力",
+          "form": "int appliedRight, appliedLeft",
+          "content": "M1は左右−100、M2は左右+100へ更新する。"
+        },
+        {
+          "kind": "出力",
+          "form": "bool stopTimingActive; uint32_t stoppedAt",
+          "content": "逆転の停止時刻と待機完了を管理する。"
+        }
+      ]
     },
     {
       "id": "COMPLETE-FD-14",
       "kind": "detailed",
-      "title": "完成コード＋障害物検知 / setup",
+      "title": "公開テンプレート / setup",
       "function": "setup",
       "functionForm": "void setup()",
-      "overview": "元の初期化＋追加呼び出し",
-      "processing": "元のモーター/IR初期化の後、setupObstacleDetectionを1行追加。",
+      "overview": "起動時にモーター・受信器・センサーを初期化する。",
+      "processing": "モーター速度・方向の6端子をOUTPUTに設定する。ブザーD13をHIGHにしてOUTPUTへ設定し、stopMotors()で停止する。D4のIR受信をLEDフィードバックなしで開始し、setupObstacleDetection()でセンサー端子を初期化する。",
       "args": "なし",
-      "returns": "なし",
-      "input": "なし",
-      "output": "全体初期化",
+      "returns": "void：戻り値なし。",
+      "input": "#define ピン設定 / グローバル初期値：右D9/D12/D11、左D6/D7/D8、IR D4、ブザーD13、Echo D3、Trig D10、後方D0/D2。",
+      "output": "端子モード・モーター出力：各端子の入出力方向を設定し、左右モーターを停止する。\nIrReceiver：D4の受信を開始する。LEDフィードバックは無効。\nセンサー・ブザー端子：Trig LOW、Echo/後方はINPUT、ブザーHIGH（OFF）。",
       "variables": "なし",
-      "calledFunctions": "stopMotors / IrReceiver.begin / setupObstacleDetection",
+      "calledFunctions": "pinMode()\ndigitalWrite()\nstopMotors()\nIrReceiver.begin()\nsetupObstacleDetection()",
       "sourceFile": "CompletedObstacleCar.ino",
-      "content": "元の初期化＋追加呼び出し\n元のモーター/IR初期化の後、setupObstacleDetectionを1行追加。",
+      "content": "起動時にモーター・受信器・センサーを初期化する。\nモーター速度・方向の6端子をOUTPUTに設定する。ブザーD13をHIGHにしてOUTPUTへ設定し、stopMotors()で停止する。D4のIR受信をLEDフィードバックなしで開始し、setupObstacleDetection()でセンサー端子を初期化する。",
       "category": "完成コードへの追加版",
       "status": "実機確認待ち",
       "visibility": "public",
-      "updated": "2026-11-16T01:20:44.793Z",
-      "links": "LATEST-CODE, COMPLETE-DESIGN"
+      "updated": "2026-11-17T02:35:39.763Z",
+      "links": "LATEST-CODE, FUNCTION-TEMPLATE-WEB, FUNCTION-TEMPLATE-XLSX",
+      "notes": "Arduinoが起動時に1回呼び出す。サーボおよびSerialは使用しない。",
+      "templateIo": [
+        {
+          "kind": "引数",
+          "form": "—",
+          "content": "引数なし。"
+        },
+        {
+          "kind": "戻り値",
+          "form": "void",
+          "content": "戻り値なし。"
+        },
+        {
+          "kind": "入力",
+          "form": "#define ピン設定 / グローバル初期値",
+          "content": "右D9/D12/D11、左D6/D7/D8、IR D4、ブザーD13、Echo D3、Trig D10、後方D0/D2。"
+        },
+        {
+          "kind": "出力",
+          "form": "端子モード・モーター出力",
+          "content": "各端子の入出力方向を設定し、左右モーターを停止する。"
+        },
+        {
+          "kind": "出力",
+          "form": "IrReceiver",
+          "content": "D4の受信を開始する。LEDフィードバックは無効。"
+        },
+        {
+          "kind": "出力",
+          "form": "センサー・ブザー端子",
+          "content": "Trig LOW、Echo/後方はINPUT、ブザーHIGH（OFF）。"
+        }
+      ]
     },
     {
       "id": "COMPLETE-FD-15",
       "kind": "detailed",
-      "title": "完成コード＋障害物検知 / loop",
+      "title": "公開テンプレート / loop",
       "function": "loop",
       "functionForm": "void loop()",
-      "overview": "元の3行＋画像Mainの処理順を追加",
-      "processing": "readRemote→checkHoldTimeout→超音波→後方IR→車両→ブザー→回避出力。回避不要なら元のdriveMotors。",
+      "overview": "リモコン・センサー・車両状態・ブザー・モーター制御を繰り返す。",
+      "processing": "readRemote()→checkHoldTimeout()→updateUltrasonicState()→updateRearInfraredState()→updateVehicleState()→updateBuzzerState()の順に処理する。applyObstacleMovement()がtrueならその周回を終了し、falseならdriveMotors()で通常走行を行う。",
       "args": "なし",
-      "returns": "なし",
-      "input": "リモコン/センサー",
-      "output": "警告と走行",
+      "returns": "void：戻り値なし。returnは今回の周回だけを終了する。",
+      "input": "リモコン・超音波・後方赤外線：各読取り関数を通じて受信信号、前方距離、後方検知を取得する。\nグローバル状態・時刻：長押し、適用済み出力、測距・ブザーの管理状態。",
+      "output": "状態変数：requested、holdActive、SD、SR1/SR2、IR、RM、Mなどを更新する。\nモーター端子：手動PWM180、回避PWM100、または停止PWM0を出力する。\nブザーD13：検知状態に応じたON/OFFを出力する。",
       "variables": "各状態変数",
-      "calledFunctions": "readRemote / checkHoldTimeout / updateUltrasonicState / updateRearInfraredState / updateVehicleState / updateBuzzerState / applyObstacleMovement / driveMotors",
+      "calledFunctions": "readRemote()\ncheckHoldTimeout()\nupdateUltrasonicState()\nupdateRearInfraredState()\nupdateVehicleState()\nupdateBuzzerState()\napplyObstacleMovement()\ndriveMotors()",
       "sourceFile": "CompletedObstacleCar.ino",
-      "content": "元の3行＋画像Mainの処理順を追加\nreadRemote→checkHoldTimeout→超音波→後方IR→車両→ブザー→回避出力。回避不要なら元のdriveMotors。",
+      "content": "リモコン・センサー・車両状態・ブザー・モーター制御を繰り返す。\nreadRemote()→checkHoldTimeout()→updateUltrasonicState()→updateRearInfraredState()→updateVehicleState()→updateBuzzerState()の順に処理する。applyObstacleMovement()がtrueならその周回を終了し、falseならdriveMotors()で通常走行を行う。",
       "category": "完成コードへの追加版",
       "status": "実機確認待ち",
       "visibility": "public",
-      "updated": "2026-11-16T01:20:44.793Z",
-      "links": "LATEST-CODE, COMPLETE-DESIGN"
+      "updated": "2026-11-17T02:35:39.763Z",
+      "links": "LATEST-CODE, FUNCTION-TEMPLATE-WEB, FUNCTION-TEMPLATE-XLSX",
+      "notes": "Arduinoが繰り返し呼び出す。OK・長押し解除は回避中も停止。実機の後方検知遅延・接触は未解決。",
+      "templateIo": [
+        {
+          "kind": "引数",
+          "form": "—",
+          "content": "引数なし。"
+        },
+        {
+          "kind": "戻り値",
+          "form": "void",
+          "content": "戻り値なし。returnは今回の周回だけを終了する。"
+        },
+        {
+          "kind": "入力",
+          "form": "リモコン・超音波・後方赤外線",
+          "content": "各読取り関数を通じて受信信号、前方距離、後方検知を取得する。"
+        },
+        {
+          "kind": "入力",
+          "form": "グローバル状態・時刻",
+          "content": "長押し、適用済み出力、測距・ブザーの管理状態。"
+        },
+        {
+          "kind": "出力",
+          "form": "状態変数",
+          "content": "requested、holdActive、SD、SR1/SR2、IR、RM、Mなどを更新する。"
+        },
+        {
+          "kind": "出力",
+          "form": "モーター端子",
+          "content": "手動PWM180、回避PWM100、または停止PWM0を出力する。"
+        },
+        {
+          "kind": "出力",
+          "form": "ブザーD13",
+          "content": "検知状態に応じたON/OFFを出力する。"
+        }
+      ]
     },
     {
       "id": "TC-UNIT-ALL",
@@ -4097,16 +4622,16 @@
     {
       "id": "COMPLETE-DESIGN",
       "group_id": "COMPLETE-DESIGN",
-      "title": "完成コード＋障害物検知・関数設計書15件",
+      "title": "関数設計書・公開テンプレート形式（15関数）",
       "name": "FunctionDesign.html",
       "url": "design/CompletedObstacleCar/FunctionDesign.html",
       "category": "03_詳細設計",
-      "size": 14485,
-      "description": "前方10cm以下で後退、後方検知で前進。回避PWM100。元の7関数・ピン・通常速度180を維持、サーボなし。実機未検証。",
+      "size": 39269,
+      "description": "種類・形式・内容の3列で入出力を記載。公開テンプレートに準拠。",
       "visibility": "public",
       "shared": false,
       "created": "2026-11-15T16:26:20.212Z",
-      "updated": "2026-11-16T01:20:44.793Z"
+      "updated": "2026-11-17T02:35:39.763Z"
     },
     {
       "id": "COMPLETE-DIFF",
@@ -4129,12 +4654,12 @@
       "name": "CompletedObstacleCar.zip",
       "url": "code/CompletedObstacleCar/CompletedObstacleCar.zip",
       "category": "05_ソースコード",
-      "size": 23142,
-      "description": "前方10cm以下で後退、後方検知で前進。回避PWM100。元の7関数・ピン・通常速度180を維持、サーボなし。実機未検証。",
+      "size": 63940,
+      "description": "完成コードと手順、公開テンプレート形式の関数設計HTML・Excelを収録。コードは変更なし。",
       "visibility": "public",
       "shared": false,
       "created": "2026-11-15T16:26:20.212Z",
-      "updated": "2026-11-16T01:20:44.793Z"
+      "updated": "2026-11-17T02:35:39.763Z"
     },
     {
       "id": "SHARED-ae8277ca-d98e-4c95-bf70-3b98f7a51ea4",
@@ -4267,6 +4792,45 @@
       "description": "この公開保存で登録したデータ・添付のJSONバックアップ。別PCでダウンロード・復元できます。",
       "visibility": "public",
       "shared": true
+    },
+    {
+      "id": "FUNCTION-TEMPLATE-XLSX",
+      "name": "関数設計書_テンプレート準拠版.xlsx",
+      "title": "関数設計書・公開テンプレート準拠版（15関数）",
+      "url": "design/CompletedObstacleCar/FunctionDesignTemplate.xlsx",
+      "size": 17106,
+      "group_id": "FUNCTION-TEMPLATE-XLSX",
+      "category": "03_詳細設計",
+      "description": "公開保存した関数設計書_sample.xlsxに合わせ、種類・形式・内容を記入。現行15関数。コード・ピン変更なし。実機未確認。",
+      "created": "2026-11-17T02:35:39.763Z",
+      "visibility": "public",
+      "shared": false
+    },
+    {
+      "id": "FUNCTION-TEMPLATE-WEB",
+      "name": "FunctionDesignTemplate.html",
+      "title": "関数設計書・公開テンプレート形式で画面表示",
+      "url": "design/CompletedObstacleCar/FunctionDesignTemplate.html",
+      "size": 39269,
+      "group_id": "FUNCTION-TEMPLATE-WEB",
+      "category": "03_詳細設計",
+      "description": "公開保存した関数設計書_sample.xlsxに合わせ、種類・形式・内容を記入。現行15関数。コード・ピン変更なし。実機未確認。",
+      "created": "2026-11-17T02:35:39.763Z",
+      "visibility": "public",
+      "shared": false
+    },
+    {
+      "id": "FUNCTION-DESIGN-LEGACY",
+      "name": "FunctionDesignLegacy.html",
+      "title": "前の形式の関数設計書",
+      "url": "design/CompletedObstacleCar/FunctionDesignLegacy.html",
+      "size": 14485,
+      "group_id": "FUNCTION-DESIGN-LEGACY",
+      "category": "03_詳細設計",
+      "description": "新しいテンプレートを適用する前の形式を参考用に保持した設計書。",
+      "created": "2026-11-17T02:35:39.763Z",
+      "visibility": "public",
+      "shared": false
     }
   ]
 }
