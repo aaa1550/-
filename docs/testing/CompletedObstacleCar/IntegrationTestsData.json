@@ -1,0 +1,2448 @@
+[
+  {
+    "sheet": "S-I-1",
+    "title": "センサ入力と車両状態",
+    "spec": "超音波D3/D10の距離と後方D0/D2のLOW入力を車両状態へ反映する。",
+    "functions": "updateUltrasonicState → updateRearInfraredState → updateVehicleState",
+    "monitor": "SD / distanceValid / SR1 / SR2 / IR / M",
+    "cases": [
+      {
+        "id": "IT-001",
+        "title": "障害物なし",
+        "steps": "前方20cm、後方左右HIGHで上を押す。",
+        "expected": "SD=20、SR1/SR2/IR=0、M=3、左右+180。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "M": 3,
+              "SR1": 0,
+              "SR2": 0,
+              "IR": 0,
+              "right": 180,
+              "left": 180
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "0ms:M",
+            "expected": "3",
+            "actual": "3"
+          },
+          {
+            "key": "0ms:SR1",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "0ms:SR2",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "0ms:IR",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "0ms:right",
+            "expected": "180",
+            "actual": "180"
+          },
+          {
+            "key": "0ms:left",
+            "expected": "180",
+            "actual": "180"
+          }
+        ]
+      },
+      {
+        "id": "IT-002",
+        "title": "前方10cm境界",
+        "steps": "前方距離を10cmにして上を押す。",
+        "expected": "SR1=1、SR2=0、M=1、左右-100。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 580,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "M": 1,
+              "SR1": 1,
+              "SR2": 0,
+              "right": -100,
+              "left": -100
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "0ms:M",
+            "expected": "1",
+            "actual": "1"
+          },
+          {
+            "key": "0ms:SR1",
+            "expected": "1",
+            "actual": "1"
+          },
+          {
+            "key": "0ms:SR2",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "0ms:right",
+            "expected": "-100",
+            "actual": "-100"
+          },
+          {
+            "key": "0ms:left",
+            "expected": "-100",
+            "actual": "-100"
+          }
+        ]
+      },
+      {
+        "id": "IT-003",
+        "title": "前方15cm境界",
+        "steps": "前方距離を15cmにして上を押す。",
+        "expected": "SR1=0、SR2=1、M=3、左右+180、警告音開始。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 870,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "M": 3,
+              "SR1": 0,
+              "SR2": 1,
+              "right": 180,
+              "buzzer": 0
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "0ms:M",
+            "expected": "3",
+            "actual": "3"
+          },
+          {
+            "key": "0ms:SR1",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "0ms:SR2",
+            "expected": "1",
+            "actual": "1"
+          },
+          {
+            "key": "0ms:right",
+            "expected": "180",
+            "actual": "180"
+          },
+          {
+            "key": "0ms:buzzer",
+            "expected": "0",
+            "actual": "0"
+          }
+        ]
+      },
+      {
+        "id": "IT-004",
+        "title": "超音波無応答",
+        "steps": "Echoが返らない状態で上を押す。",
+        "expected": "distanceValid=0、SD=-1、M=0、左右PWM=0。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 0,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "valid": 0,
+              "M": 0,
+              "right": 0,
+              "left": 0
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "0ms:valid",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "0ms:M",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "0ms:right",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "0ms:left",
+            "expected": "0",
+            "actual": "0"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "sheet": "S-O-1",
+    "title": "前方障害物と後退出力",
+    "spec": "前方10cm以下で低速後退する。反転前は100ms停止し、解除時は押している方向へ戻る。",
+    "functions": "loop → updateVehicleState → applyObstacleMovement / driveMotors",
+    "monitor": "SR1 / SR2 / M / 左右方向D12,D11,D7,D8 / PWM D9,D6",
+    "cases": [
+      {
+        "id": "IT-005",
+        "title": "前進から前方回避",
+        "steps": "上を長押しして前進。前方を10cmにし、停止区間と後退を測る。",
+        "expected": "10cm検知で停止、停止後99msは0、100msで左右-100。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {}
+          },
+          {
+            "t": 60,
+            "echo": 580,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 1,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "M": 1,
+              "right": 0
+            }
+          },
+          {
+            "t": 159,
+            "echo": 580,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 1,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "right": 0
+            }
+          },
+          {
+            "t": 160,
+            "echo": 580,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 1,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "right": -100,
+              "left": -100
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "60ms:M",
+            "expected": "1",
+            "actual": "1"
+          },
+          {
+            "key": "60ms:right",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "159ms:right",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "160ms:right",
+            "expected": "-100",
+            "actual": "-100"
+          },
+          {
+            "key": "160ms:left",
+            "expected": "-100",
+            "actual": "-100"
+          }
+        ]
+      },
+      {
+        "id": "IT-006",
+        "title": "10cmを超えた警告領域",
+        "steps": "前方を約10.017cmにして上を押す。",
+        "expected": "SR1=0、SR2=1。後退せず左右+180。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 581,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "SR1": 0,
+              "SR2": 1,
+              "M": 3,
+              "right": 180
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "0ms:SR1",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "0ms:SR2",
+            "expected": "1",
+            "actual": "1"
+          },
+          {
+            "key": "0ms:M",
+            "expected": "3",
+            "actual": "3"
+          },
+          {
+            "key": "0ms:right",
+            "expected": "180",
+            "actual": "180"
+          }
+        ]
+      },
+      {
+        "id": "IT-007",
+        "title": "15cm超の解除領域",
+        "steps": "前方を約15.017cmにして上を押す。",
+        "expected": "SR1=SR2=0。左右+180、ブザーHIGHで消音。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 871,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "SR1": 0,
+              "SR2": 0,
+              "right": 180,
+              "buzzer": 1
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "0ms:SR1",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "0ms:SR2",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "0ms:right",
+            "expected": "180",
+            "actual": "180"
+          },
+          {
+            "key": "0ms:buzzer",
+            "expected": "1",
+            "actual": "1"
+          }
+        ]
+      },
+      {
+        "id": "IT-008",
+        "title": "前方解除後に操作へ復帰",
+        "steps": "前方10cmで後退中、20cmへ戻す。上の長押しを継続する。",
+        "expected": "M=3へ復帰。反転時100ms停止後、左右+180。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 580,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {}
+          },
+          {
+            "t": 60,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 1,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "M": 3,
+              "right": 0
+            }
+          },
+          {
+            "t": 160,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 1,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "right": 180,
+              "left": 180
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "60ms:M",
+            "expected": "3",
+            "actual": "3"
+          },
+          {
+            "key": "60ms:right",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "160ms:right",
+            "expected": "180",
+            "actual": "180"
+          },
+          {
+            "key": "160ms:left",
+            "expected": "180",
+            "actual": "180"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "sheet": "S-O-2",
+    "title": "後方障害物と前進出力",
+    "spec": "後方左右のいずれかLOWなら低速前進する。実際の接触回避は検知距離と慣性を含めて確認する。",
+    "functions": "updateRearInfraredState → updateVehicleState → applyObstacleMovement",
+    "monitor": "D0 / D2 / IR / M / 左右PWM・方向",
+    "cases": [
+      {
+        "id": "IT-009",
+        "title": "後方左検知で前進",
+        "steps": "下を長押しして後退。左センサをLOWにし、検知距離と接触有無を記録する。",
+        "expected": "IR=1、M=2。反転100ms後に左右+100。実機では障害物へ接触しないこと。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": 82,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {}
+          },
+          {
+            "t": 1,
+            "echo": 1160,
+            "l": 0,
+            "r": 1,
+            "key": 82,
+            "flags": 1,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "IR": 1,
+              "M": 2,
+              "right": 0
+            }
+          },
+          {
+            "t": 101,
+            "echo": 1160,
+            "l": 0,
+            "r": 1,
+            "key": 82,
+            "flags": 1,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "right": 100,
+              "left": 100
+            }
+          }
+        ],
+        "note": "ユーザー申告：後方検知後に前進へ切り替わるが接触する。原因・検知距離・速度・実施日は未計測。実機判定は保留。",
+        "hardware": "保留",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "1ms:IR",
+            "expected": "1",
+            "actual": "1"
+          },
+          {
+            "key": "1ms:M",
+            "expected": "2",
+            "actual": "2"
+          },
+          {
+            "key": "1ms:right",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "101ms:right",
+            "expected": "100",
+            "actual": "100"
+          },
+          {
+            "key": "101ms:left",
+            "expected": "100",
+            "actual": "100"
+          }
+        ]
+      },
+      {
+        "id": "IT-010",
+        "title": "後方右検知で前進",
+        "steps": "下を長押しし右センサだけLOWにする。",
+        "expected": "左HIGH・右LOWでもIR=1、M=2。左右+100。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 1160,
+            "l": 1,
+            "r": 0,
+            "key": 82,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "IR": 1,
+              "M": 2,
+              "right": 100,
+              "left": 100
+            }
+          }
+        ],
+        "note": "ユーザー申告：後方検知後に前進へ切り替わるが接触する。原因・検知距離・速度・実施日は未計測。実機判定は保留。",
+        "hardware": "保留",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "0ms:IR",
+            "expected": "1",
+            "actual": "1"
+          },
+          {
+            "key": "0ms:M",
+            "expected": "2",
+            "actual": "2"
+          },
+          {
+            "key": "0ms:right",
+            "expected": "100",
+            "actual": "100"
+          },
+          {
+            "key": "0ms:left",
+            "expected": "100",
+            "actual": "100"
+          }
+        ]
+      },
+      {
+        "id": "IT-011",
+        "title": "後方左右同時検知",
+        "steps": "前方20cm、後方左右LOWで下を押す。",
+        "expected": "IR=1、M=2、左右+100。前方も危険な場合の停止は別項目。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 1160,
+            "l": 0,
+            "r": 0,
+            "key": 82,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "IR": 1,
+              "M": 2,
+              "right": 100,
+              "left": 100
+            }
+          }
+        ],
+        "note": "ユーザー申告：後方検知後に前進へ切り替わるが接触する。原因・検知距離・速度・実施日は未計測。実機判定は保留。",
+        "hardware": "保留",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "0ms:IR",
+            "expected": "1",
+            "actual": "1"
+          },
+          {
+            "key": "0ms:M",
+            "expected": "2",
+            "actual": "2"
+          },
+          {
+            "key": "0ms:right",
+            "expected": "100",
+            "actual": "100"
+          },
+          {
+            "key": "0ms:left",
+            "expected": "100",
+            "actual": "100"
+          }
+        ]
+      },
+      {
+        "id": "IT-012",
+        "title": "後方検知解除",
+        "steps": "後方検知中に下を長押し。左右HIGHへ戻す。",
+        "expected": "IR=0、M=4。反転100ms停止後に左右-180。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 1160,
+            "l": 0,
+            "r": 1,
+            "key": 82,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {}
+          },
+          {
+            "t": 1,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": 82,
+            "flags": 1,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "IR": 0,
+              "M": 4,
+              "right": 0
+            }
+          },
+          {
+            "t": 101,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": 82,
+            "flags": 1,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "right": -180,
+              "left": -180
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "1ms:IR",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "1ms:M",
+            "expected": "4",
+            "actual": "4"
+          },
+          {
+            "key": "1ms:right",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "101ms:right",
+            "expected": "-180",
+            "actual": "-180"
+          },
+          {
+            "key": "101ms:left",
+            "expected": "-180",
+            "actual": "-180"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "sheet": "S-M-1",
+    "title": "距離とブザー周期",
+    "spec": "前方10〜15cmは近いほど警告周期を短くする。危険時は100ms周期、ON時間35ms。",
+    "functions": "updateUltrasonicState → updateBuzzerState",
+    "monitor": "D13 LOW=ON / HIGH=OFF、周期・ON時間",
+    "cases": [
+      {
+        "id": "IT-013",
+        "title": "15cmで600ms周期",
+        "steps": "前方15cmを維持し上を長押し。D13の波形を測定する。",
+        "expected": "開始LOW、35msでHIGH、599msでHIGH、600msでLOW。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 870,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "buzzer": 0
+            }
+          },
+          {
+            "t": 35,
+            "echo": 870,
+            "l": 1,
+            "r": 1,
+            "key": null,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "buzzer": 1
+            }
+          },
+          {
+            "t": 200,
+            "echo": 870,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 1,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {}
+          },
+          {
+            "t": 400,
+            "echo": 870,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 1,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {}
+          },
+          {
+            "t": 599,
+            "echo": 870,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 1,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "buzzer": 1
+            }
+          },
+          {
+            "t": 600,
+            "echo": 870,
+            "l": 1,
+            "r": 1,
+            "key": null,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "buzzer": 0
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "0ms:buzzer",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "35ms:buzzer",
+            "expected": "1",
+            "actual": "1"
+          },
+          {
+            "key": "599ms:buzzer",
+            "expected": "1",
+            "actual": "1"
+          },
+          {
+            "key": "600ms:buzzer",
+            "expected": "0",
+            "actual": "0"
+          }
+        ]
+      },
+      {
+        "id": "IT-014",
+        "title": "12.5cmで350ms周期",
+        "steps": "前方12.5cmを維持してD13の周期を測定する。",
+        "expected": "349msでHIGH、350msでLOW。15cmより周期が短い。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 725,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {}
+          },
+          {
+            "t": 200,
+            "echo": 725,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 1,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {}
+          },
+          {
+            "t": 349,
+            "echo": 725,
+            "l": 1,
+            "r": 1,
+            "key": null,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "buzzer": 1
+            }
+          },
+          {
+            "t": 350,
+            "echo": 725,
+            "l": 1,
+            "r": 1,
+            "key": null,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "buzzer": 0
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "349ms:buzzer",
+            "expected": "1",
+            "actual": "1"
+          },
+          {
+            "key": "350ms:buzzer",
+            "expected": "0",
+            "actual": "0"
+          }
+        ]
+      },
+      {
+        "id": "IT-015",
+        "title": "10cmで100ms周期",
+        "steps": "前方10cmでD13のON時間と周期を測定する。",
+        "expected": "34msでLOW、35msでHIGH、99msでHIGH、100msでLOW。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 580,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {}
+          },
+          {
+            "t": 34,
+            "echo": 580,
+            "l": 1,
+            "r": 1,
+            "key": null,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "buzzer": 0
+            }
+          },
+          {
+            "t": 35,
+            "echo": 580,
+            "l": 1,
+            "r": 1,
+            "key": null,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "buzzer": 1
+            }
+          },
+          {
+            "t": 99,
+            "echo": 580,
+            "l": 1,
+            "r": 1,
+            "key": null,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "buzzer": 1
+            }
+          },
+          {
+            "t": 100,
+            "echo": 580,
+            "l": 1,
+            "r": 1,
+            "key": null,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "buzzer": 0
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "34ms:buzzer",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "35ms:buzzer",
+            "expected": "1",
+            "actual": "1"
+          },
+          {
+            "key": "99ms:buzzer",
+            "expected": "1",
+            "actual": "1"
+          },
+          {
+            "key": "100ms:buzzer",
+            "expected": "0",
+            "actual": "0"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "sheet": "S-M-3",
+    "title": "リモコン長押しと通常走行",
+    "spec": "4方向の操作・同一リモコンのリピート・250msの受信期限をモータ出力まで確認する。",
+    "functions": "readRemote → checkHoldTimeout → updateVehicleState → driveMotors",
+    "monitor": "受信D4 / requested / holdActive / RM / M / 左右出力",
+    "cases": [
+      {
+        "id": "IT-016",
+        "title": "前進操作",
+        "steps": "前方20cm、後方HIGHで前進キーを押す。",
+        "expected": "M=3、右+180、左+180、PWM180。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "M": 3,
+              "right": 180,
+              "left": 180,
+              "hold": 1
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "0ms:M",
+            "expected": "3",
+            "actual": "3"
+          },
+          {
+            "key": "0ms:right",
+            "expected": "180",
+            "actual": "180"
+          },
+          {
+            "key": "0ms:left",
+            "expected": "180",
+            "actual": "180"
+          },
+          {
+            "key": "0ms:hold",
+            "expected": "1",
+            "actual": "1"
+          }
+        ]
+      },
+      {
+        "id": "IT-017",
+        "title": "後退操作",
+        "steps": "前方20cm、後方HIGHで後退キーを押す。",
+        "expected": "M=4、右-180、左-180、PWM180。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": 82,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "M": 4,
+              "right": -180,
+              "left": -180,
+              "hold": 1
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "0ms:M",
+            "expected": "4",
+            "actual": "4"
+          },
+          {
+            "key": "0ms:right",
+            "expected": "-180",
+            "actual": "-180"
+          },
+          {
+            "key": "0ms:left",
+            "expected": "-180",
+            "actual": "-180"
+          },
+          {
+            "key": "0ms:hold",
+            "expected": "1",
+            "actual": "1"
+          }
+        ]
+      },
+      {
+        "id": "IT-018",
+        "title": "右旋回操作",
+        "steps": "前方20cm、後方HIGHで右旋回キーを押す。",
+        "expected": "M=5、右-180、左+180、PWM180。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": 90,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "M": 5,
+              "right": -180,
+              "left": 180,
+              "hold": 1
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "0ms:M",
+            "expected": "5",
+            "actual": "5"
+          },
+          {
+            "key": "0ms:right",
+            "expected": "-180",
+            "actual": "-180"
+          },
+          {
+            "key": "0ms:left",
+            "expected": "180",
+            "actual": "180"
+          },
+          {
+            "key": "0ms:hold",
+            "expected": "1",
+            "actual": "1"
+          }
+        ]
+      },
+      {
+        "id": "IT-019",
+        "title": "左旋回操作",
+        "steps": "前方20cm、後方HIGHで左旋回キーを押す。",
+        "expected": "M=6、右+180、左-180、PWM180。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": 8,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "M": 6,
+              "right": 180,
+              "left": -180,
+              "hold": 1
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "0ms:M",
+            "expected": "6",
+            "actual": "6"
+          },
+          {
+            "key": "0ms:right",
+            "expected": "180",
+            "actual": "180"
+          },
+          {
+            "key": "0ms:left",
+            "expected": "-180",
+            "actual": "-180"
+          },
+          {
+            "key": "0ms:hold",
+            "expected": "1",
+            "actual": "1"
+          }
+        ]
+      },
+      {
+        "id": "IT-020",
+        "title": "長押しリピート継続",
+        "steps": "上を押し、200ms後NEC2の同一キー・アドレスのリピートを送る。",
+        "expected": "最後のリピートから249msまでは前進を継続。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {}
+          },
+          {
+            "t": 200,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 1,
+            "addr": 7,
+            "protocol": "NEC2",
+            "expect": {}
+          },
+          {
+            "t": 449,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": null,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "hold": 1,
+              "right": 180,
+              "M": 3
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "449ms:hold",
+            "expected": "1",
+            "actual": "1"
+          },
+          {
+            "key": "449ms:right",
+            "expected": "180",
+            "actual": "180"
+          },
+          {
+            "key": "449ms:M",
+            "expected": "3",
+            "actual": "3"
+          }
+        ]
+      },
+      {
+        "id": "IT-021",
+        "title": "長押し解除250ms",
+        "steps": "上を押して信号を止める。249msと250msの状態を確認する。",
+        "expected": "249msで前進、250msでholdActive=0、M=0、左右停止。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {}
+          },
+          {
+            "t": 249,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": null,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "right": 180
+            }
+          },
+          {
+            "t": 250,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": null,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "hold": 0,
+              "M": 0,
+              "right": 0,
+              "left": 0
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "249ms:right",
+            "expected": "180",
+            "actual": "180"
+          },
+          {
+            "key": "250ms:hold",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "250ms:M",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "250ms:right",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "250ms:left",
+            "expected": "0",
+            "actual": "0"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "sheet": "S-M-2",
+    "title": "停止条件と回避の優先順位",
+    "spec": "OK・受信異常・前後同時検知・測距失敗による停止が回避出力より優先される。",
+    "functions": "readRemote / updateVehicleState → applyObstacleMovement → stopMotors",
+    "monitor": "holdActive / distanceValid / SR1 / IR / M / 左右出力",
+    "cases": [
+      {
+        "id": "IT-022",
+        "title": "回避中のOK停止",
+        "steps": "前方10cmで後退中にOKを押す。",
+        "expected": "長押し解除、M=0、左右停止。障害物があるので警告音は継続。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 580,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {}
+          },
+          {
+            "t": 1,
+            "echo": 580,
+            "l": 1,
+            "r": 1,
+            "key": 28,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "hold": 0,
+              "M": 0,
+              "right": 0,
+              "left": 0
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "1ms:hold",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "1ms:M",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "1ms:right",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "1ms:left",
+            "expected": "0",
+            "actual": "0"
+          }
+        ]
+      },
+      {
+        "id": "IT-023",
+        "title": "異常受信で停止",
+        "steps": "通常前進後、パリティ異常の受信を与える。",
+        "expected": "holdActive=0、M=0、左右停止。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {}
+          },
+          {
+            "t": 1,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 4,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "hold": 0,
+              "M": 0,
+              "right": 0,
+              "left": 0
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "1ms:hold",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "1ms:M",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "1ms:right",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "1ms:left",
+            "expected": "0",
+            "actual": "0"
+          }
+        ]
+      },
+      {
+        "id": "IT-024",
+        "title": "前後同時検知で停止",
+        "steps": "前方10cm、後方左LOWで上を押す。",
+        "expected": "SR1=1かつIR=1、M=0、左右停止。警告音は鳴る。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 580,
+            "l": 0,
+            "r": 1,
+            "key": 24,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "SR1": 1,
+              "IR": 1,
+              "M": 0,
+              "right": 0,
+              "left": 0,
+              "buzzer": 0
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "0ms:SR1",
+            "expected": "1",
+            "actual": "1"
+          },
+          {
+            "key": "0ms:IR",
+            "expected": "1",
+            "actual": "1"
+          },
+          {
+            "key": "0ms:M",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "0ms:right",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "0ms:left",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "0ms:buzzer",
+            "expected": "0",
+            "actual": "0"
+          }
+        ]
+      },
+      {
+        "id": "IT-025",
+        "title": "走行中の測距失敗",
+        "steps": "通常前進中にEchoを無応答にし次の測距を待つ。",
+        "expected": "distanceValid=0、M=0、左右停止。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {}
+          },
+          {
+            "t": 60,
+            "echo": 0,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 1,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "valid": 0,
+              "M": 0,
+              "right": 0,
+              "left": 0
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "60ms:valid",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "60ms:M",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "60ms:right",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "60ms:left",
+            "expected": "0",
+            "actual": "0"
+          }
+        ]
+      },
+      {
+        "id": "IT-026",
+        "title": "未使用キーで延長しない",
+        "steps": "上を押し200ms後に未使用キー255、250msまで待つ。",
+        "expected": "未使用キーで受信期限を延長せず、250msで停止。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {}
+          },
+          {
+            "t": 200,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": 255,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {}
+          },
+          {
+            "t": 250,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": null,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "hold": 0,
+              "M": 0,
+              "right": 0
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "250ms:hold",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "250ms:M",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "250ms:right",
+            "expected": "0",
+            "actual": "0"
+          }
+        ]
+      },
+      {
+        "id": "IT-027",
+        "title": "別リモコンのリピートを無視",
+        "steps": "上を押し200ms後に別アドレス8のリピート、250msまで待つ。",
+        "expected": "同じキーでも別アドレスでは期限を延長せず停止。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {}
+          },
+          {
+            "t": 200,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 1,
+            "addr": 8,
+            "protocol": "NEC",
+            "expect": {}
+          },
+          {
+            "t": 250,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": null,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "hold": 0,
+              "M": 0,
+              "right": 0
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "250ms:hold",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "250ms:M",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "250ms:right",
+            "expected": "0",
+            "actual": "0"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "sheet": "S-O-3",
+    "title": "方向反転と停止時間",
+    "spec": "方向が反転するモータがある場合は100ms停止し、その間もloop処理を継続する。",
+    "functions": "readRemote → driveMotors → stopMotors",
+    "monitor": "appliedRight / appliedLeft / stoppedAt / stopTimingActive / PWM",
+    "cases": [
+      {
+        "id": "IT-028",
+        "title": "前進から後退へ反転",
+        "steps": "上を押し1ms後に下。99msと100msの停止区間を確認する。",
+        "expected": "反転直後と99ms後は0、100ms後に左右-180。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {}
+          },
+          {
+            "t": 1,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": 82,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "right": 0,
+              "left": 0
+            }
+          },
+          {
+            "t": 100,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": null,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "right": 0
+            }
+          },
+          {
+            "t": 101,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": null,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "right": -180,
+              "left": -180
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "1ms:right",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "1ms:left",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "100ms:right",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "101ms:right",
+            "expected": "-180",
+            "actual": "-180"
+          },
+          {
+            "key": "101ms:left",
+            "expected": "-180",
+            "actual": "-180"
+          }
+        ]
+      },
+      {
+        "id": "IT-029",
+        "title": "前進から旋回へ反転",
+        "steps": "上を押し1ms後に右。停止後100msの出力を確認する。",
+        "expected": "片輪の反転でも両輪を停止し、100ms後に右-180・左+180。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {}
+          },
+          {
+            "t": 1,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": 90,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "right": 0,
+              "left": 0
+            }
+          },
+          {
+            "t": 101,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": null,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "right": -180,
+              "left": 180
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "1ms:right",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "1ms:left",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "101ms:right",
+            "expected": "-180",
+            "actual": "-180"
+          },
+          {
+            "key": "101ms:left",
+            "expected": "180",
+            "actual": "180"
+          }
+        ]
+      },
+      {
+        "id": "IT-030",
+        "title": "未操作時の障害物",
+        "steps": "キーを押さず前方10cmに障害物を置く。",
+        "expected": "M=0、左右停止。自動後退は開始せず警告のみ。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 580,
+            "l": 1,
+            "r": 1,
+            "key": null,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "hold": 0,
+              "M": 0,
+              "right": 0,
+              "left": 0,
+              "buzzer": 0
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "0ms:hold",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "0ms:M",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "0ms:right",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "0ms:left",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "0ms:buzzer",
+            "expected": "0",
+            "actual": "0"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "sheet": "S-M-4",
+    "title": "全体シーケンスと同時動作",
+    "spec": "loop全体で受信・センサ・優先判定・モータ・ブザーが連動する。",
+    "functions": "setup → loop（全関数の結合）",
+    "monitor": "受信D4、Echo D3、後方D0/D2、モータD9/D6、ブザーD13",
+    "cases": [
+      {
+        "id": "IT-031",
+        "title": "後方検知と前方警告の併存",
+        "steps": "前方15cm、後方LOWで下を押す。",
+        "expected": "前方は警告領域なので後方回避の前進を選ぶ。M=2、左右+100、100ms周期。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 870,
+            "l": 0,
+            "r": 1,
+            "key": 82,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "SR2": 1,
+              "M": 2,
+              "right": 100
+            }
+          },
+          {
+            "t": 100,
+            "echo": 870,
+            "l": 0,
+            "r": 1,
+            "key": 82,
+            "flags": 1,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "buzzer": 0
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "0ms:SR2",
+            "expected": "1",
+            "actual": "1"
+          },
+          {
+            "key": "0ms:M",
+            "expected": "2",
+            "actual": "2"
+          },
+          {
+            "key": "0ms:right",
+            "expected": "100",
+            "actual": "100"
+          },
+          {
+            "key": "100ms:buzzer",
+            "expected": "0",
+            "actual": "0"
+          }
+        ]
+      },
+      {
+        "id": "IT-032",
+        "title": "停止中も警告継続・解除で消音",
+        "steps": "前方10cmでOK停止後、20cmへ戻す。",
+        "expected": "停止中も危険時は警告。障害物解除後は停止したまま消音。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 580,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {}
+          },
+          {
+            "t": 1,
+            "echo": 580,
+            "l": 1,
+            "r": 1,
+            "key": 28,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {}
+          },
+          {
+            "t": 100,
+            "echo": 580,
+            "l": 1,
+            "r": 1,
+            "key": null,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "M": 0,
+              "right": 0,
+              "buzzer": 0
+            }
+          },
+          {
+            "t": 160,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": null,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "M": 0,
+              "right": 0,
+              "buzzer": 1
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "100ms:M",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "100ms:right",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "100ms:buzzer",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "160ms:M",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "160ms:right",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "160ms:buzzer",
+            "expected": "1",
+            "actual": "1"
+          }
+        ]
+      },
+      {
+        "id": "IT-033",
+        "title": "回避中の長押し終了",
+        "steps": "前方10cmで後退させ、信号を止め250ms待つ。",
+        "expected": "回避中でも250msでM=0、左右停止。警告音は継続。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 580,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {}
+          },
+          {
+            "t": 250,
+            "echo": 580,
+            "l": 1,
+            "r": 1,
+            "key": null,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "hold": 0,
+              "M": 0,
+              "right": 0,
+              "left": 0
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "250ms:hold",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "250ms:M",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "250ms:right",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "250ms:left",
+            "expected": "0",
+            "actual": "0"
+          }
+        ]
+      },
+      {
+        "id": "IT-034",
+        "title": "前方回避から後方回避へ切替",
+        "steps": "前方10cmで後退中、前方20cmかつ後方LOWへ変える。",
+        "expected": "後方回避M=2へ切替、100ms停止後に左右+100。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 580,
+            "l": 1,
+            "r": 1,
+            "key": 24,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {}
+          },
+          {
+            "t": 60,
+            "echo": 1160,
+            "l": 0,
+            "r": 1,
+            "key": 24,
+            "flags": 1,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "M": 2,
+              "right": 0
+            }
+          },
+          {
+            "t": 160,
+            "echo": 1160,
+            "l": 0,
+            "r": 1,
+            "key": 24,
+            "flags": 1,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "M": 2,
+              "right": 100,
+              "left": 100
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "60ms:M",
+            "expected": "2",
+            "actual": "2"
+          },
+          {
+            "key": "60ms:right",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "160ms:M",
+            "expected": "2",
+            "actual": "2"
+          },
+          {
+            "key": "160ms:right",
+            "expected": "100",
+            "actual": "100"
+          },
+          {
+            "key": "160ms:left",
+            "expected": "100",
+            "actual": "100"
+          }
+        ]
+      },
+      {
+        "id": "IT-035",
+        "title": "前方解除で旋回へ復帰",
+        "steps": "右キー保持中、前方10cmで回避させ、20cmに戻す。",
+        "expected": "右指令を保持。解除時M=5、100ms停止後に右-180・左+180。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 580,
+            "l": 1,
+            "r": 1,
+            "key": 90,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {}
+          },
+          {
+            "t": 60,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": 90,
+            "flags": 1,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "M": 5,
+              "right": 0,
+              "left": 0
+            }
+          },
+          {
+            "t": 160,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": 90,
+            "flags": 1,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "right": -180,
+              "left": 180
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "60ms:M",
+            "expected": "5",
+            "actual": "5"
+          },
+          {
+            "key": "60ms:right",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "60ms:left",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "160ms:right",
+            "expected": "-180",
+            "actual": "-180"
+          },
+          {
+            "key": "160ms:left",
+            "expected": "180",
+            "actual": "180"
+          }
+        ]
+      },
+      {
+        "id": "IT-036",
+        "title": "起動直後の停止",
+        "steps": "キーを押さず起動し、最初のloopを実行する。",
+        "expected": "受信ピンD4。左右PWM0、方向端子LOW、ブザーHIGH。",
+        "events": [
+          {
+            "t": 0,
+            "echo": 1160,
+            "l": 1,
+            "r": 1,
+            "key": null,
+            "flags": 0,
+            "addr": 7,
+            "protocol": "NEC",
+            "expect": {
+              "M": 0,
+              "hold": 0,
+              "right": 0,
+              "left": 0,
+              "buzzer": 1,
+              "receiverPin": 4,
+              "directionSum": 0
+            }
+          }
+        ],
+        "note": "",
+        "hardware": "未実施",
+        "simulation": "合格（模擬）",
+        "outputs": [
+          {
+            "key": "0ms:M",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "0ms:hold",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "0ms:right",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "0ms:left",
+            "expected": "0",
+            "actual": "0"
+          },
+          {
+            "key": "0ms:buzzer",
+            "expected": "1",
+            "actual": "1"
+          },
+          {
+            "key": "0ms:receiverPin",
+            "expected": "4",
+            "actual": "4"
+          },
+          {
+            "key": "0ms:directionSum",
+            "expected": "0",
+            "actual": "0"
+          }
+        ]
+      }
+    ]
+  }
+]
