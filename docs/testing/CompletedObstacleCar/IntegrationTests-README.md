@@ -25,3 +25,5 @@ tests/CompletedObstacleCar.inoは作成時の原文コピー。
 ソース版：4c9b73020a81f5f390ba3b7491e64dd19b0ff66b
 各シナリオはreset→setupから開始し、指定時刻に入力してloopのみを呼び出します。
 results.ndjsonのpurposeがIT-001〜IT-036の対応IDです。
+
+判定欄はテンプレート通り「結果（OK/NG）」。実機未確認の36欄は空欄で、Excelの選択肢はOKとNGのみ。未実施・保留の事情はエビデンス欄に残しています。

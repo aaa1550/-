@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-11-17T14:12:55.281872+09:00",
+  "updatedAt": "2026-11-17T15:35:44.448709+09:00",
   "records": [
     {
       "id": "LATEST-CODE",
@@ -5477,9 +5477,9 @@
       "name": "IntegrationTests.xlsx",
       "title": "結合テスト仕様兼結果書（テンプレート形式・36件）",
       "url": "testing/CompletedObstacleCar/IntegrationTests.xlsx",
-      "size": 465438,
+      "size": 465041,
       "category": "06_テスト仕様書",
-      "description": "公開保存の8シートに沿った36件。ホスト模擬36件合格。実機未実施、後方接触は未解決・保留。",
+      "description": "公開保存の8シートに沿った36件。ホスト模擬36件合格。実機未実施、後方接触は未解決・保留。 判定欄はテンプレート通りOK/NG。未確認の欄は空欄。",
       "created": "2026-11-17T14:12:55.281872+09:00",
       "visibility": "public",
       "shared": false
@@ -5490,9 +5490,9 @@
       "name": "IntegrationTests.html",
       "title": "結合テスト36件・サイト閲覧版",
       "url": "testing/CompletedObstacleCar/IntegrationTests.html",
-      "size": 161606,
+      "size": 161447,
       "category": "07_テスト結果",
-      "description": "公開保存の8シートに沿った36件。ホスト模擬36件合格。実機未実施、後方接触は未解決・保留。",
+      "description": "公開保存の8シートに沿った36件。ホスト模擬36件合格。実機未実施、後方接触は未解決・保留。 判定欄はテンプレート通りOK/NG。未確認の欄は空欄。",
       "created": "2026-11-17T14:12:55.281872+09:00",
       "visibility": "public",
       "shared": false
@@ -5503,9 +5503,9 @@
       "name": "CompletedObstacleCar_IntegrationTests.zip",
       "title": "結合テスト・Excelと再実行コード一式",
       "url": "testing/CompletedObstacleCar/CompletedObstacleCar_IntegrationTests.zip",
-      "size": 116319,
+      "size": 115969,
       "category": "07_テスト結果",
-      "description": "公開保存の8シートに沿った36件。ホスト模擬36件合格。実機未実施、後方接触は未解決・保留。",
+      "description": "公開保存の8シートに沿った36件。ホスト模擬36件合格。実機未実施、後方接触は未解決・保留。 判定欄はテンプレート通りOK/NG。未確認の欄は空欄。",
       "created": "2026-11-17T14:12:55.281872+09:00",
       "visibility": "public",
       "shared": false
