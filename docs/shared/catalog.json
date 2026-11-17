@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-11-17T01:53:35.247Z",
+  "updatedAt": "2026-11-17T02:14:50.296Z",
   "records": [
     {
       "id": "LATEST-CODE",
@@ -4240,6 +4240,33 @@
       "created": "2026-11-17T01:53:35.247Z",
       "visibility": "public",
       "shared": false
+    },
+    {
+      "id": "SHARED-fbdfdf22-ed48-437a-a219-f06e6eebfab4",
+      "group_id": "SHARED-fbdfdf22-ed48-437a-a219-f06e6eebfab4",
+      "name": "関数設計書_sample.xlsx",
+      "title": "関数設計書_sample.xlsx",
+      "category": "13_その他",
+      "description": "サイトから公開保存した原本",
+      "size": 13252,
+      "created": "2026-11-17T02:14:25.993Z",
+      "visibility": "public",
+      "shared": true,
+      "publishedAt": "2026-11-17T02:14:49.451Z",
+      "url": "shared/files/b2031623-9f71-4c38-b087-5a00a5d7fa5e.xlsx"
+    },
+    {
+      "id": "BACKUP-510c8fe6-c96f-4aa8-a607-96f953d91bb9",
+      "group_id": "BACKUP-510c8fe6-c96f-4aa8-a607-96f953d91bb9",
+      "name": "osoyoo-shared-2026-11-17T02-14-50-296Z.json",
+      "title": "公開保存データ一式（2026/11/17 11:14:50）",
+      "url": "shared/backups/BACKUP-510c8fe6-c96f-4aa8-a607-96f953d91bb9.json",
+      "size": 18361,
+      "created": "2026-11-17T02:14:50.296Z",
+      "category": "12_参考資料",
+      "description": "この公開保存で登録したデータ・添付のJSONバックアップ。別PCでダウンロード・復元できます。",
+      "visibility": "public",
+      "shared": true
     }
   ]
 }
