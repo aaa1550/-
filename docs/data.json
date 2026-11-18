@@ -2676,11 +2676,11 @@
       "name": "OSOYOO_robot_car_presentation.pptx",
       "title": "OSOYOO ロボットカー制御システム（PowerPoint発表資料）",
       "url": "files/OSOYOO_robot_car_presentation.pptx",
-      "size": 46505,
+      "size": 152517,
       "category": "10_発表資料",
-      "description": "Arduino UNOを使ったロボットカーのリモコン操作、障害物検知・回避、検証結果をまとめた発表資料（全11枚）。",
+      "description": "機材構成、制御フローチャート、停止・回避条件、単体111件・結合40件の模擬テスト結果をまとめた発表資料（全11枚、発表者ノート付き）。",
       "created": "2026-11-18T00:00:00+09:00",
-      "change": "初版掲載",
+      "change": "改訂版（2026-11-19）",
       "visibility": "public"
     }
   ]
