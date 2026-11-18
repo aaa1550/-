@@ -2669,6 +2669,19 @@
       "visibility": "public",
       "generator": "robot-library-v1",
       "links": "FILE-DESIGN"
+    },
+    {
+      "id": "FILE-OSOYOO-PRESENTATION",
+      "group_id": "FILE-OSOYOO-PRESENTATION",
+      "name": "OSOYOO_robot_car_presentation.pptx",
+      "title": "OSOYOO ロボットカー制御システム（PowerPoint発表資料）",
+      "url": "files/OSOYOO_robot_car_presentation.pptx",
+      "size": 46505,
+      "category": "10_発表資料",
+      "description": "Arduino UNOを使ったロボットカーのリモコン操作、障害物検知・回避、検証結果をまとめた発表資料（全11枚）。",
+      "created": "2026-11-18T00:00:00+09:00",
+      "change": "初版掲載",
+      "visibility": "public"
     }
   ]
 }
