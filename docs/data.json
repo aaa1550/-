@@ -2676,11 +2676,11 @@
       "name": "OSOYOO_robot_car_presentation.pptx",
       "title": "OSOYOO ロボットカー制御システム（PowerPoint発表資料）",
       "url": "files/OSOYOO_robot_car_presentation.pptx",
-      "size": 152517,
+      "size": 144367,
       "category": "10_発表資料",
-      "description": "機材構成、制御フローチャート、停止・回避条件、単体111件・結合40件の模擬テスト結果をまとめた発表資料（全11枚、発表者ノート付き）。",
+      "description": "目次に沿って、車両の説明、追加機能、フローチャート、単体テスト111件、結合テスト40件、学んだこと、デモ手順を収録（全9枚、発表者ノート付き）。",
       "created": "2026-11-18T00:00:00+09:00",
-      "change": "改訂版（2026-11-19）",
+      "change": "発表構成改訂版（2026-11-19）",
       "visibility": "public"
     }
   ]
