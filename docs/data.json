@@ -2682,6 +2682,20 @@
       "created": "2026-11-18T00:00:00+09:00",
       "change": "15分発表版（2026-11-19）",
       "visibility": "public"
+    },
+    {
+      "id": "FILE-OSOYOO-SCRIPT",
+      "group_id": "FILE-OSOYOO-SCRIPT",
+      "name": "OSOYOO_presentation_script_15min.txt",
+      "title": "OSOYOO ロボットカー 発表原稿（15分）",
+      "url": "files/OSOYOO_presentation_script_15min.txt",
+      "size": 11168,
+      "category": "10_発表資料",
+      "description": "全9枚に対応する読み上げ原稿。説明12分・デモ3分の時間配分と実演手順を収録。",
+      "created": "2026-11-19T00:00:00+09:00",
+      "change": "原稿を追加",
+      "visibility": "public",
+      "links": "FILE-OSOYOO-PRESENTATION"
     }
   ]
 }
