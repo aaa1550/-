@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-11-17T23:41:13.213175+09:00",
+  "updatedAt": "2026-11-19T04:07:48.924Z",
   "records": [
     {
       "id": "LATEST-CODE",
@@ -8180,6 +8180,33 @@
       "created": "2026-11-17T23:41:13.213175+09:00",
       "visibility": "public",
       "shared": false
+    },
+    {
+      "id": "SHARED-ee32f36e-f67b-4265-9dd3-763ed41515d4",
+      "group_id": "SHARED-ee32f36e-f67b-4265-9dd3-763ed41515d4",
+      "name": "OSOYOO_robot_car_presentation (1).pptx",
+      "title": "OSOYOO_robot_car_presentation (1).pptx",
+      "category": "13_その他",
+      "description": "サイトから公開保存した原本",
+      "size": 842433,
+      "created": "2026-11-19T04:07:20.400Z",
+      "visibility": "public",
+      "shared": true,
+      "publishedAt": "2026-11-19T04:07:47.676Z",
+      "url": "shared/files/d35cb067-2265-4902-886f-34c27c55e920.pptx"
+    },
+    {
+      "id": "BACKUP-6155c33f-5d14-40dc-8fdc-2954cf61b0e1",
+      "group_id": "BACKUP-6155c33f-5d14-40dc-8fdc-2954cf61b0e1",
+      "name": "osoyoo-shared-2026-11-19T04-07-48-924Z.json",
+      "title": "公開保存データ一式（2026/11/19 13:07:48）",
+      "url": "shared/backups/BACKUP-6155c33f-5d14-40dc-8fdc-2954cf61b0e1.json",
+      "size": 1123956,
+      "created": "2026-11-19T04:07:48.924Z",
+      "category": "12_参考資料",
+      "description": "この公開保存で登録したデータ・添付のJSONバックアップ。別PCでダウンロード・復元できます。",
+      "visibility": "public",
+      "shared": true
     }
   ]
 }
