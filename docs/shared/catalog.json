@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-11-20T00:47:13.340074+00:00",
+  "updatedAt": "2026-11-20T00:55:53.899Z",
   "records": [
     {
       "id": "LATEST-CODE",
@@ -8230,6 +8230,33 @@
       "url": "shared/backups/BACKUP-eab21a1b-3ace-49b3-b620-8a8fba53e866.json",
       "size": 2353,
       "created": "2026-11-20T00:06:49.896Z",
+      "category": "12_参考資料",
+      "description": "この公開保存で登録したデータ・添付のJSONバックアップ。別PCでダウンロード・復元できます。",
+      "visibility": "public",
+      "shared": true
+    },
+    {
+      "id": "SHARED-56e3d672-0e2f-49f6-94b9-e014812da5d0",
+      "group_id": "SHARED-56e3d672-0e2f-49f6-94b9-e014812da5d0",
+      "name": "new成果報告_コメント版.pptx",
+      "title": "new成果報告_コメント版.pptx",
+      "category": "13_その他",
+      "description": "サイトから公開保存した原本",
+      "size": 854255,
+      "created": "2026-11-20T00:55:14.750Z",
+      "visibility": "public",
+      "shared": true,
+      "publishedAt": "2026-11-20T00:55:52.056Z",
+      "url": "shared/files/ba8860ca-03c0-4131-b469-45d1ea654e01.pptx"
+    },
+    {
+      "id": "BACKUP-153478c0-5bee-4e7e-9223-2a8c28f8abc7",
+      "group_id": "BACKUP-153478c0-5bee-4e7e-9223-2a8c28f8abc7",
+      "name": "osoyoo-shared-2026-11-20T00-55-53-899Z.json",
+      "title": "公開保存データ一式（2026/11/20 9:55:53）",
+      "url": "shared/backups/BACKUP-153478c0-5bee-4e7e-9223-2a8c28f8abc7.json",
+      "size": 1139716,
+      "created": "2026-11-20T00:55:53.899Z",
       "category": "12_参考資料",
       "description": "この公開保存で登録したデータ・添付のJSONバックアップ。別PCでダウンロード・復元できます。",
       "visibility": "public",
