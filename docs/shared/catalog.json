@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-11-20T00:55:53.899Z",
+  "updatedAt": "2026-11-20T03:49:44.702041+00:00",
   "records": [
     {
       "id": "LATEST-CODE",
@@ -8187,8 +8187,8 @@
       "name": "OSOYOO_robot_car_presentation (1).pptx",
       "title": "OSOYOO_robot_car_presentation (1).pptx",
       "category": "13_その他",
-      "description": "図解を追加した全11枚。車の動き3場面、単体テスト111件（7項目）・結合テスト40件（8項目）の内訳と確認の流れを収録。結果はパソコン上の模擬試験。",
-      "size": 1328825,
+      "description": "コメント版の助言も反映した全11枚。図解、単体111／111件・結合40／40件の内訳、試験ID・入力・期待動作・OK/NG結果、苦労した点と学びを収録。テスト結果はパソコン上の確認。",
+      "size": 1330243,
       "created": "2026-11-19T04:07:20.400Z",
       "visibility": "public",
       "shared": true,
